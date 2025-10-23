@@ -61,6 +61,16 @@ pytest
 
 You should see output indicating all tests passed. ✅
 
+### Initialize the Database
+
+Create the SQLite database for storing cards and game data:
+
+```powershell
+py -m src.db.init_db
+```
+
+The database will be created at `C:\Users\YourName\.tcg_deckhand\deckhand.db`
+
 ## 📁 Project Structure
 
 ```
@@ -90,7 +100,20 @@ pytest
 pytest --cov=src
 
 # Run a specific test file
-pytest tests/test_basic.py
+pytest tests/test_database.py
+
+# Run tests with verbose output
+pytest -v
+```
+
+### Database Management
+
+```powershell
+# Initialize the database (creates tables)
+py -m src.db.init_db
+
+# Initialize in a custom location
+py -m src.db.init_db --path C:/custom/path/game.db
 ```
 
 ### Code Quality (Optional)

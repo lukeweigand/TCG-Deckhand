@@ -23,9 +23,9 @@
 - ✅ **Write initial README.md** - Setup instructions, how to run, how to test (PowerShell commands)
 
 ### 1.2 Database Setup
-- ⬜ **Design SQLite schema** - Implement Card Definitions and Game Sessions tables
-- ⬜ **Create database initialization script** - `src/db/init_db.py` to create tables
-- ⬜ **Write database connection module** - `src/db/connection.py` for managing DB connections
+- ✅ **Design SQLite schema** - Implement Card Definitions and Game Sessions tables
+- ✅ **Create database initialization script** - `src/db/init_db.py` to create tables
+- ✅ **Write database connection module** - `src/db/connection.py` for managing DB connections
 - ⬜ **Create database migration strategy** - Document approach for schema changes
 
 ---
