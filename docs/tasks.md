@@ -26,7 +26,7 @@
 - ✅ **Design SQLite schema** - Implement Card Definitions and Game Sessions tables
 - ✅ **Create database initialization script** - `src/db/init_db.py` to create tables
 - ✅ **Write database connection module** - `src/db/connection.py` for managing DB connections
-- ⬜ **Create database migration strategy** - Document approach for schema changes
+- ✅ **Create database migration strategy** - Document approach for schema changes
 
 ---
 

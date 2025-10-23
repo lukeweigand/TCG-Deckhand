@@ -7,7 +7,7 @@ from pathlib import Path
 import tempfile
 import os
 
-from src.db.schema import init_database, get_schema
+from src.db.schema import init_database, get_schema, get_schema_version, CURRENT_SCHEMA_VERSION
 
 
 @pytest.fixture
@@ -113,3 +113,48 @@ def test_schema_is_valid_sql(temp_db):
         conn.close()
     
     assert success, "Schema SQL contains syntax errors"
+
+
+def test_schema_version_table_created(temp_db):
+    """Test that schema_version table is created during initialization."""
+    init_database(temp_db)
+    
+    conn = sqlite3.connect(temp_db)
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='schema_version'")
+    result = cursor.fetchone()
+    conn.close()
+    
+    assert result is not None, "schema_version table not created"
+
+
+def test_initial_schema_version_is_set(temp_db):
+    """Test that initial schema version is recorded as version 1."""
+    init_database(temp_db)
+    
+    conn = sqlite3.connect(temp_db)
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT version, description FROM schema_version")
+    result = cursor.fetchone()
+    conn.close()
+    
+    assert result is not None
+    assert result[0] == 1, "Initial version should be 1"
+    assert "initial" in result[1].lower(), "Description should mention initial schema"
+
+
+def test_get_schema_version_returns_current_version(temp_db):
+    """Test that get_schema_version returns the correct version."""
+    init_database(temp_db)
+    
+    version = get_schema_version(temp_db)
+    assert version == CURRENT_SCHEMA_VERSION
+
+
+def test_get_schema_version_returns_zero_for_nonexistent_db():
+    """Test that get_schema_version returns 0 for non-existent database."""
+    fake_path = Path("/nonexistent/database.db")
+    version = get_schema_version(fake_path)
+    assert version == 0

@@ -133,6 +133,8 @@ flake8 src/ tests/
 - **[Product Requirements Document (PRD)](docs/prd.md)** - Product vision and goals
 - **[Technical Specification](docs/technical-specification.md)** - Architecture and tech stack
 - **[Design Document](docs/design-document.md)** - User personas and design principles
+- **[Database Design](docs/database-design.md)** - Schema structure and rationale
+- **[Database Migrations](docs/database-migrations.md)** - Migration strategy and process
 - **[Task Tracker](docs/tasks.md)** - Living document of all MVP work items
 
 ## 🎓 Learning Resources
