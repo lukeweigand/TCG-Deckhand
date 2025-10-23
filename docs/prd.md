@@ -1,0 +1,143 @@
+# TCG Deckhand - Product Requirements Document
+
+**Target Release:** Dec. 2025  
+**Product Manager:** Luke Weigand  
+**Version:** 1.0 (MVP)  
+**Date Updated:** September 16, 2025
+
+## The Problem Space: The 'Why'
+
+### A Strategic Void for High-Value Competitive Players
+
+While the global Trading Card Game (TCG) market is a robust, multi-billion-dollar industry, projected to grow to as much as $37.42 billion by 2034 with a CAGR of 10.98%, a critical gap exists for its most valuable players: the competitive community. These players, who invest significant time and resources in high-stakes tournaments with prize pools reaching $2,000,000 USD, are underserved by the current digital ecosystem. The problem, which we term the "preparation paradox," manifests in three key, quantifiable areas:
+
+**Inefficient Playtesting:** Competitive preparation is a rigorous process, requiring players to play between 20 and 100 games per matchup to obtain reliable data. Existing public simulators are not designed for this methodical, data-intensive practice, forcing players to use cumbersome workarounds and wasting valuable time that could be spent preparing for tournaments with substantial financial incentives.
+
+**Erosion of Strategic Advantage:** The public nature of online simulators exposes proprietary deck builds and innovative strategies. This strategic liability can directly impact a professional player's ability to secure a winning position and claim substantial prize money, such as the $50,000 first-place prize at the Pokémon Worlds 2025 TCG event.
+
+**Player Attrition Due to Toxicity:** While the card game genre has a comparatively low toxicity rate of 23%, the problem is acutely concentrated in the high-stakes competitive space. This pervasive negativity is a financially costly issue, as over 67% of gamers have left a game entirely due to toxic experiences. This represents a loss of the lifetime value of a dedicated player who may have a decade or more of experience. The need for a safe, private space is a crucial factor in retaining this valuable player base.
+
+This quantifiable market gap demonstrates a clear demand for a platform that provides a private, secure, and professional-grade environment for competitive playtesting. The opportunity lies in providing a solution that addresses these pain points and captures the significant value currently lost to player attrition and inefficient practice.
+
+### Validation Evidence
+
+**Qualitative Evidence:** Direct user feedback and observations indicate that players are frustrated with the public nature and lack of privacy on existing platforms. The need for a private training ground is a key point.
+
+**Competitive Gaps:** Current online simulators do not offer deep, real-time strategic analysis or private sandboxes, which represents a clear gap in the market.
+
+## The Solution Space: The 'Possibilities'
+
+The solution is an AI-powered, private sandbox for competitive TCG players. This tool will provide real-time strategic analysis and win-probability metrics, enabling players to refine decks and practice without exposing their strategies.
+
+### Core Functionalities & Features
+
+- A downloadable, TCG-agnostic game engine
+- A single-player mode for playing against a computer opponent
+- A "Win Advantage" calculator that analyzes the board state
+- A "Best Move" suggestion feature for the current turn
+
+### User Interactions & Touchpoints
+
+Users will download the application, input their decks, and play a single-player game. The primary interaction will be the ability to get real-time analysis and "best move" suggestions at key decision points in the game. Game data will be stored locally on the user's computer to ensure privacy.
+
+## Value Proposition
+
+We help competitive TCG players to refine decks and practice alone by providing a private, AI-powered sandbox with real-time strategic analysis and win-probability metrics. This is a private, focused training environment that is unlike public online simulators.
+
+### Who Benefits
+
+- Competitive TCG Players
+- Aspiring Pro Players
+- Deck-building Enthusiasts
+- Beginners who want to enhance their skills
+
+## Goals and Success Criteria
+
+### Goals
+
+- Prove the value of the AI-powered strategic analysis concept
+- Establish a core, functional single-player game engine that is TCG-agnostic
+- Validate the accuracy and usefulness of the "Best Move" suggestion algorithm
+
+### Success Criteria
+
+- A minimum viable product (MVP) is launched by December 2025
+- The core game engine is stable and can successfully run a full game between a user and the AI
+- The "Best Move" suggestion feature consistently provides useful and valid strategic advice
+- Initial user testing (e.g., in a DMT 445 class setting) receives positive feedback on the core concept and features
+
+## User Experience
+
+### Key User Flow
+
+1. User downloads and opens the TCG Deckhand application
+2. User inputs their deck data
+3. User starts a game against the computer opponent
+4. During a complex board state, the user feels unsure of the optimal play
+5. The user clicks the "suggest best move" button
+6. The application highlights the best move they hadn't considered
+7. An advantage bar shifts, showing the strength of the play
+8. The player wins the game feeling more confident and prepared for a tournament
+
+The UI will be simple and clean, focused on the core gameplay loop and the analytical tools.
+
+## Competitor Analysis
+
+### Existing Online Simulators
+
+**Strengths:**
+- Often free, public, and support a wide variety of card games
+- They allow players to test out new decks against other people
+
+**Weaknesses:**
+- They are public, which exposes a player's strategy
+- They often lack a private sandbox environment for focused training
+- They do not offer deep, real-time strategic analysis or win-probability metrics
+- The public environment can also be unfriendly and unwelcoming
+
+TCG Deckhand will address these weaknesses by providing a private, AI-powered solution focused on strategic improvement rather than social play.
+
+## Key Features and Releases
+
+### V1: MVP (In-Scope)
+
+- **Generic TCG Rule Engine:** The core system that handles game logic
+- **Single-player vs. Computer:** The main game mode
+- **"Win Advantage" Calculator:** A visual tool that scores the current board state to show who is ahead
+- **"Best Move" Suggestion:** An algorithm that analyzes all legal moves and suggests the one with the highest potential score
+
+### V2 and Beyond (Out-of-Scope)
+
+- Computer vs. Computer simulation for rapid analysis
+- Advanced AI with multiple difficulty levels
+- Official card art or branding
+- Mobile application
+- Multiplayer functionality
+
+## User Stories and Requirements
+
+- As a competitive TCG player, I want to play against a computer opponent so that I can practice my strategies in a private environment
+- As a strategic player, I want to see a win-probability metric so that I can evaluate the current state of the game
+- As a player who wants to improve, I want the tool to suggest the best move so that I can learn optimal plays I might have missed
+- As a user, I want to input my own card data so that I can use the tool for any TCG without copyright issues
+
+## Out of Scope
+
+The following items are explicitly not included in the MVP to ensure a focused, achievable launch:
+
+- Advanced AI with multiple difficulty levels
+- Official card art or branding
+- A mobile application
+- Multiplayer functionality
+- Computer vs. Computer simulation
+
+## Notes, Meeting Minutes, Decisions
+
+### Assumptions
+
+- The "trial and error" AI algorithm is feasible to develop within the MVP timeframe
+- A flexible game engine can be created that is easily adaptable to different TCG rule sets in the future
+
+### Copyright Mitigation Strategy
+
+The engine will be 100% generic, and users will input card data themselves. The platform will never host or distribute copyrighted images, names, or text.
