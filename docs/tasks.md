@@ -16,11 +16,11 @@
 ## Phase 1: Project Setup & Infrastructure
 
 ### 1.1 Development Environment
-- ⬜ **Set up Python virtual environment** - Create `.venv` and document activation steps
-- ⬜ **Create `requirements.txt`** - Define initial dependencies (Python 3.10+, NumPy, pytest)
-- ⬜ **Set up project folder structure** - Create `src/`, `tests/`, and initial module structure
-- ⬜ **Add .gitignore** - Exclude `.venv/`, `__pycache__/`, `*.pyc`, `.db` files
-- ⬜ **Write initial README.md** - Setup instructions, how to run, how to test (PowerShell commands)
+- ✅ **Set up Python virtual environment** - Create `.venv` and document activation steps
+- ✅ **Create `requirements.txt`** - Define initial dependencies (Python 3.10+, NumPy, pytest)
+- ✅ **Set up project folder structure** - Create `src/`, `tests/`, and initial module structure
+- ✅ **Add .gitignore** - Exclude `.venv/`, `__pycache__/`, `*.pyc`, `.db` files
+- ✅ **Write initial README.md** - Setup instructions, how to run, how to test (PowerShell commands)
 
 ### 1.2 Database Setup
 - ⬜ **Design SQLite schema** - Implement Card Definitions and Game Sessions tables
