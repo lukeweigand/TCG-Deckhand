@@ -99,12 +99,13 @@ def get_schema() -> str:
     """
 
 
-def init_database(db_path: Optional[Path] = None) -> None:
+def init_database(db_path: Optional[Path | str] = None) -> None:
     """
     Initialize the database by creating all tables.
     
     Args:
-        db_path: Path to the database file. If None, uses default location.
+        db_path: Path to the database file (Path object or string). 
+                 If None, uses default location.
         
     This function:
     1. Creates the database directory if it doesn't exist
@@ -114,6 +115,9 @@ def init_database(db_path: Optional[Path] = None) -> None:
     """
     if db_path is None:
         db_path = DEFAULT_DB_PATH
+    else:
+        # Convert string to Path if needed
+        db_path = Path(db_path) if isinstance(db_path, str) else db_path
     
     # Create directory if it doesn't exist
     db_path.parent.mkdir(parents=True, exist_ok=True)

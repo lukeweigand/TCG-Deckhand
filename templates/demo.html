@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TCG Deckhand - Flask Demo</title>
+    <style>
+        /* Simple, clean styling */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+        
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.2);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+        
+        .card-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .card-type {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .type-leader {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        
+        .type-character {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        
+        .type-event {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+        }
+        
+        .type-stage {
+            background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+            color: white;
+        }
+        
+        .card-stats {
+            display: flex;
+            gap: 15px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        
+        .stat {
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.85em;
+            margin-right: 5px;
+        }
+        
+        .stat-value {
+            color: #333;
+            font-size: 1.1em;
+        }
+        
+        .card-effect {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.95em;
+            color: #555;
+            line-height: 1.5;
+            font-style: italic;
+        }
+        
+        .info-box {
+            background: rgba(255,255,255,0.95);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .info-box h2 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        
+        .info-box p {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎴 TCG Deckhand</h1>
+        <p class="subtitle">Flask Web UI Demo - Your Card Collection</p>
+        
+        <div class="info-box">
+            <h2>👋 Welcome to the Flask Demo!</h2>
+            <p>
+                This is a <span class="highlight">simple preview</span> of what we'll build in Phase 3.5. 
+                Notice how your Python card models are automatically displayed in a beautiful web interface!
+            </p>
+            <p>
+                <strong>Key Point:</strong> This is the same <code>Leader</code>, <code>Character</code>, and 
+                <code>Event</code> classes we just built. Flask just makes them look pretty in a browser. 
+                No new code needed - just HTML templates! 🎨
+            </p>
+        </div>
+        
+        <div class="cards-grid">
+            {% for card in cards %}
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-name">{{ card.name }}</div>
+                    <div class="card-type type-{{ card.card_type.lower() }}">
+                        {{ card.card_type }}
+                    </div>
+                </div>
+                
+                <div class="card-stats">
+                    <div class="stat">
+                        <span class="stat-label">Cost:</span>
+                        <span class="stat-value">{{ card.cost }} DON!!</span>
+                    </div>
+                    
+                    {% if card.card_type == 'Leader' %}
+                        <div class="stat">
+                            <span class="stat-label">Power:</span>
+                            <span class="stat-value">{{ card.power }}</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Life:</span>
+                            <span class="stat-value">{{ card.life }}</span>
+                        </div>
+                    {% elif card.card_type == 'Character' %}
+                        <div class="stat">
+                            <span class="stat-label">Power:</span>
+                            <span class="stat-value">{{ card.power }}</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Counter:</span>
+                            <span class="stat-value">+{{ card.counter }}</span>
+                        </div>
+                    {% elif card.card_type == 'Event' %}
+                        {% if card.counter > 0 %}
+                        <div class="stat">
+                            <span class="stat-label">Counter:</span>
+                            <span class="stat-value">+{{ card.counter }}</span>
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                
+                <div class="card-effect">
+                    {{ card.effect_text }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

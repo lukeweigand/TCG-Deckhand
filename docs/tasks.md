@@ -1,7 +1,7 @@
 # TCG Deckhand - MVP Task Tracker
 
 **Target Release:** December 2025  
-**Last Updated:** October 23, 2025
+**Last Updated:** October 28, 2025
 
 > This is a living document tracking all work needed to build the MVP. Tasks are organized by component and marked with status indicators.
 
@@ -13,16 +13,16 @@
 
 ---
 
-## Phase 1: Project Setup & Infrastructure
+## Phase 1: Project Setup & Infrastructure ✅
 
-### 1.1 Development Environment
+### 1.1 Development Environment ✅
 - ✅ **Set up Python virtual environment** - Create `.venv` and document activation steps
 - ✅ **Create `requirements.txt`** - Define initial dependencies (Python 3.10+, NumPy, pytest)
 - ✅ **Set up project folder structure** - Create `src/`, `tests/`, and initial module structure
 - ✅ **Add .gitignore** - Exclude `.venv/`, `__pycache__/`, `*.pyc`, `.db` files
 - ✅ **Write initial README.md** - Setup instructions, how to run, how to test (PowerShell commands)
 
-### 1.2 Database Setup
+### 1.2 Database Setup ✅
 - ✅ **Design SQLite schema** - Implement Card Definitions and Game Sessions tables
 - ✅ **Create database initialization script** - `src/db/init_db.py` to create tables
 - ✅ **Write database connection module** - `src/db/connection.py` for managing DB connections
@@ -30,28 +30,29 @@
 
 ---
 
-## Phase 2: Core Game Engine (TCG-Agnostic)
+## Phase 2: Core Game Engine (One Piece TCG-Based)
 
-### 2.1 Card System
-- ⬜ **Define Card data model** - `src/models/card.py` with generic attributes (name, type, stats, text)
-- ⬜ **Implement Card validation** - Ensure required fields, valid types
-- ⬜ **Create Deck data model** - `src/models/deck.py` to manage collections of cards
-- ⬜ **Write Deck validation logic** - Check deck size limits, card legality (generic rules)
-- ⬜ **Add card CRUD operations** - Save/load/update/delete cards from SQLite
+### 2.1 Card & Deck System ✅
+- ✅ **Define Card data model** - Base Card + Leader, Character, Event, Stage classes
+- ✅ **Implement Card validation** - DON!! cost (0-10), power (0-13000), counter (0/1000/2000), life (1-10)
+- ✅ **Create Deck data model** - Manage 50-card deck + leader slot
+- ✅ **Write Deck validation logic** - Exactly 50 cards, max 4 copies, 1 leader required
+- ✅ **Add card CRUD operations** - save_card(), get_card_by_id/name/type(), search_cards(), delete_card()
+- ✅ **Add deck CRUD operations** - save_deck(), get_deck_by_id/name(), search_decks(), delete_deck()
 
 ### 2.2 Game State Management
 - ⬜ **Design GameState class** - `src/engine/game_state.py` tracking hands, field, decks, discard
-- ⬜ **Implement player state** - Health/resources, active cards, turn tracking
-- ⬜ **Create zone management** - Hand, Field, Deck, Discard pile operations
-- ⬜ **Write game initialization** - Shuffle decks, draw starting hands, set starting player
+- ⬜ **Implement player state** - Life, DON!! pool (total & active), active leader
+- ⬜ **Create zone management** - Hand, Field, Deck, Discard, DON!! deck operations
+- ⬜ **Write game initialization** - Shuffle decks, draw starting hands (5 cards), place leaders, DON!! setup
 - ⬜ **Add state serialization** - Convert GameState to/from JSON for saving
 
 ### 2.3 Rules Engine
 - ⬜ **Define Move/Action interface** - `src/engine/action.py` for all possible actions
 - ⬜ **Implement legal move validation** - Check if action is valid given current state
-- ⬜ **Create turn phases system** - Draw phase, main phase, end phase
+- ⬜ **Create turn phases system** - Refresh, Draw, DON!!, Main, End phases
 - ⬜ **Write move execution logic** - Apply actions and update game state
-- ⬜ **Add win/loss condition checker** - Detect when game ends
+- ⬜ **Add win/loss condition checker** - Leader defeated (life = 0) or deck out
 
 ### 2.4 Game Loop
 - ⬜ **Create main game loop** - `src/engine/game.py` coordinating turns
