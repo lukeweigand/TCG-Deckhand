@@ -5,6 +5,23 @@
 
 > This is a living document tracking all work needed to build the MVP. Tasks are organized by component and marked with status indicators.
 
+## 📊 Current Progress Summary
+
+**Overall Status:** Phase 3.1 Complete (AI Foundation)  
+**Total Tests Passing:** 287 tests (100% pass rate)
+- Phase 1: ✅ Complete (Infrastructure)
+- Phase 2: ✅ Complete (Core Game Engine - 263 tests)
+- Phase 3.1: ✅ Complete (Random AI with Defense - 24 tests)
+- Phase 3.2: ⬜ Not Started (Minimax AI)
+- Phase 3.3: ⬜ Not Started (MCTS AI)
+
+**Recent Achievements:**
+- Added defensive AI capabilities (blockers & counters)
+- Created interactive battle system for defender responses
+- AI now works like real opponents (offensive + defensive decisions)
+
+---
+
 ## Legend
 - ⬜ Not Started
 - 🟡 In Progress
@@ -69,35 +86,46 @@
 - ⬜ **Implement trigger effects** - Optional activation when life card is taken (detection complete, execution pending)
 - ✅ **Write comprehensive tests** - 248 total tests passing, 83% overall coverage
 
-### 2.4 Game Loop
+### 2.4 Game Loop ✅
 - ✅ **Create main game loop** - `src/engine/game.py` coordinating turns (Complete Oct 30, 2025)
 - ✅ **Implement turn management** - Switch between player and AI turns, automatic phase progression
 - ✅ **Add action execution pipeline** - Validate → Execute → Update state (play cards, attacks, DON!!, pass phase)
+- ✅ **Integrate interactive battles** - Updated to use interactive_battle.py for defender responses
 - ✅ **Write comprehensive tests** - 15 new tests for game loop, all passing
 - ⬜ **Write game session logger** - Record all moves to database (Optional for MVP)
 
-**Phase 2 Complete: 263 total tests passing, Core Game Engine functional**
+**Phase 2 Complete: 263 tests passing (game engine only), Core Game Engine functional**
 
 ---
 
 ## Phase 3: AI Opponent
 
-### 3.1 AI Foundation
-- ⬜ **Design AI interface** - `src/ai/opponent.py` with abstract base class
-- ⬜ **Implement random AI (baseline)** - Simple AI that makes random legal moves
-- ⬜ **Create board state evaluator** - `src/ai/evaluator.py` scoring positions
+### 3.1 AI Foundation ✅ ✅
+- ✅ **Design AI interface** - Player Protocol implemented in `src/engine/game.py` with get_action() method
+- ✅ **Implement random AI (baseline)** - `src/ai/random_ai.py` with offensive actions (14 tests passing)
+- ✅ **Add defensive AI capabilities** - Blocker responses and counter card usage (10 additional tests passing)
+- ✅ **Create interactive battle system** - `src/engine/interactive_battle.py` for defender interaction during combat
 - ✅ **Write move generator** - `get_legal_actions()` already implemented in rules.py
+- ✅ **Total AI tests** - 24 tests passing (14 offensive + 10 defensive)
+- ⚠️ **Demos created** - demo_ai_battle.py and demo_ai_defense.py (display encoding issue in PowerShell, functionality works)
 
-### 3.2 Strategic AI
+**Phase 3.1 Complete: RandomAI works like chess bots - chooses from legal moves, responds defensively during opponent attacks**
+
+### 3.2 Strategic AI (Minimax)
 - ⬜ **Research Minimax algorithm** - Study approach for turn-based games
-- ⬜ **Implement Minimax with alpha-beta pruning** - `src/ai/minimax.py`
-- ⬜ **Add depth-limited search** - Control AI thinking time
-- ⬜ **Create heuristic evaluation function** - Score board states strategically
-- ⬜ **Test AI vs Random AI** - Validate AI makes better decisions
+- ⬜ **Implement Minimax with alpha-beta pruning** - `src/ai/minimax_ai.py` depth 2-3
+- ⬜ **Create board state evaluator** - `src/ai/evaluator.py` scoring positions (life cards, field presence, DON!!, hand size)
+- ⬜ **Add depth-limited search** - Control AI thinking time with configurable depth
+- ⬜ **Inherit defensive capabilities** - Minimax will use same blocker/counter decision methods
+- ⬜ **Test Minimax vs Random AI** - Run 10+ games, validate win rate improvement
 
-### 3.3 AI Optimization
-- ⬜ **Profile AI performance** - Measure move generation speed
-- ⬜ **Optimize evaluation function** - Improve speed without losing quality
+### 3.3 Advanced AI (Monte Carlo Tree Search)
+- ⬜ **Research MCTS algorithm** - Study UCB1 selection and simulation approaches
+- ⬜ **Implement MCTS** - `src/ai/mcts_ai.py` with UCB1 selection
+- ⬜ **Add simulation rollouts** - Random playouts from current position
+- ⬜ **Set time budget** - Control thinking time per move
+- ⬜ **Test MCTS vs Minimax and Random** - Compare all three AI types
+- ⬜ **Profile AI performance** - Measure move generation speed and quality
 - ⬜ **Add difficulty levels** - Easy (depth 1), Medium (depth 3), Hard (depth 5)
 
 ---
