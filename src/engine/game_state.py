@@ -67,6 +67,7 @@ class PlayerState:
     
     # Leader area (center top)
     leader: Optional[Leader] = None
+    leader_state: CardState = CardState.ACTIVE  # Leader can be ACTIVE or RESTED (after attacking)
     life_cards: List[Card] = field(default_factory=list)  # Face-down cards under leader
     defeated: bool = False  # True when leader takes damage at 0 life (loses the game)
     
@@ -92,6 +93,10 @@ class PlayerState:
     don_pool: int = 0  # Total DON!! accumulated this game
     active_don: int = 0  # DON!! available to spend this turn
     attached_don: Dict[str, int] = field(default_factory=dict)  # card_id -> DON!! count
+    
+    # Summoning sickness tracking
+    played_this_turn: set = field(default_factory=set)  # card_ids played this turn (can't attack)
+    first_turn: bool = True  # True on player's first turn (all characters have summoning sickness)
     
     def __post_init__(self):
         """Initialize life cards from leader if present."""
@@ -185,7 +190,8 @@ class GameState:
         One Piece TCG DON!! Refresh Rules:
         1. Detach all DON!! from characters/leaders and return to active DON!!
         2. Add 2 more DON!! from don_deck to don_pool (capped at 10 total)
-        3. Untap all characters (set to ACTIVE)
+        3. Untap all characters AND leader (set to ACTIVE)
+        4. Clear summoning sickness (played_this_turn) and first_turn flag
         
         Args:
             player: The player whose DON!! to refresh
@@ -205,9 +211,14 @@ class GameState:
                 player.don_pool += 1
                 player.active_don += 1
         
-        # Step 3: Untap all characters (set to ACTIVE)
+        # Step 3: Untap all characters AND leader (set to ACTIVE)
+        player.leader_state = CardState.ACTIVE
         for char_id in player.character_states:
             player.character_states[char_id] = CardState.ACTIVE
+        
+        # Step 4: Clear summoning sickness and first turn flag
+        player.played_this_turn.clear()
+        player.first_turn = False
     
     def advance_phase(self):
         """Move to the next phase of the turn."""

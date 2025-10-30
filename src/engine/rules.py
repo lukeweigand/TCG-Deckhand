@@ -13,6 +13,7 @@ from .actions import (
     Action, ActionType, PlayCardAction, AttackAction, AttachDonAction,
     UseCounterAction, UseBlockerAction, PassPhaseAction
 )
+from .abilities import has_rush
 
 
 class ValidationError(Exception):
@@ -108,8 +109,10 @@ def _validate_attack(game: GameState, action: AttackAction) -> tuple[bool, Optio
     
     # Validate attacker
     if action.is_leader_attack:
-        # Leaders can attack (though rare in One Piece TCG)
-        pass
+        # Leaders can attack
+        # Check if leader has summoning sickness (first turn)
+        if attacker.first_turn:
+            return (False, "Cannot attack on your first turn")
     else:
         # Find attacker character
         attacker_char = next((c for c in attacker.characters if c.id == action.attacker_id), None)
@@ -120,9 +123,18 @@ def _validate_attack(game: GameState, action: AttackAction) -> tuple[bool, Optio
         if attacker.character_states.get(action.attacker_id) == CardState.RESTED:
             return (False, "Attacker is already rested")
         
-        # Check for summoning sickness (played this turn)
-        # TODO: Track when cards were played to enforce this
-        # For now, assume all characters on field can attack
+        # Check for summoning sickness (played this turn or first turn)
+        # First turn restriction applies to everyone, even Rush characters
+        if attacker.first_turn:
+            return (False, "Cannot attack on your first turn")
+        
+        # Check if played this turn (Rush bypasses this)
+        if action.attacker_id in attacker.played_this_turn:
+            if has_rush(attacker_char):
+                # Rush allows attacking immediately (but not on first turn)
+                pass
+            else:
+                return (False, "Character has summoning sickness (played this turn)")
     
     # Validate target
     target_is_leader = (action.target_id == "leader" or action.target_id == defender.leader.id)

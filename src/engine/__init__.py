@@ -15,6 +15,10 @@ from .actions import (
 )
 from .battle import Battle, BattlePhase, initiate_battle, apply_blocker, apply_counter, resolve_battle, execute_full_battle
 from .rules import validate_action, get_legal_actions, ValidationError
+from .abilities import (
+    AbilityType, Ability, parse_abilities, has_ability,
+    has_rush, has_blocker, has_trigger, get_counter_value, get_ability_don_cost
+)
 
 __all__ = [
     # Game State
@@ -53,5 +57,15 @@ __all__ = [
     "validate_action",
     "get_legal_actions",
     "ValidationError",
+    # Abilities
+    "AbilityType",
+    "Ability",
+    "parse_abilities",
+    "has_ability",
+    "has_rush",
+    "has_blocker",
+    "has_trigger",
+    "get_counter_value",
+    "get_ability_don_cost",
 ]
 

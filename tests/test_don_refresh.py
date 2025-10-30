@@ -223,3 +223,16 @@ class TestDonRefresh:
         # All DON!! should be detached and returned
         assert len(player.attached_don) == 0
         assert player.active_don == 6 + 2  # 6 detached + 2 from deck
+    
+    def test_untap_leader(self, game_with_don):
+        """Test that leader is untapped during refresh."""
+        game = game_with_don
+        player = game.player1
+        
+        # Rest the leader (after attacking)
+        player.leader_state = CardState.RESTED
+        
+        game.refresh_don(player)
+        
+        # Leader should be ACTIVE
+        assert player.leader_state == CardState.ACTIVE

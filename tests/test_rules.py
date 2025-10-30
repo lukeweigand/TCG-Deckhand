@@ -41,6 +41,10 @@ def game_for_validation(valid_deck):
     # Give player1 some active DON!!
     game.player1.active_don = 5
     
+    # Clear first_turn flag (allow attacks for validation tests)
+    game.player1.first_turn = False
+    game.player2.first_turn = False
+    
     # Add a character to player1's field
     field_char = Character(name="Field Char", cost=3, power=4000, counter=1000)
     game.player1.characters.append(field_char)
