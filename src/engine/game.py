@@ -328,19 +328,18 @@ class Game:
     
     def _execute_attack(self, action: Action) -> bool:
         """
-        Execute an ATTACK action.
+        Execute an ATTACK action with defensive player interaction.
         
-        1. Identify attacker and defender
-        2. Execute full battle (using battle.py system)
-        3. Update card states (RESTED attacker, destroyed characters)
-        4. Apply life damage if leader attacked
+        1. Initiate battle
+        2. Ask defending player for blocker response
+        3. Ask defending player for counter response  
+        4. Resolve battle and update game state
         """
         if self.state is None:
             return False
         
         from src.engine.actions import AttackAction
-        from src.engine.battle import execute_full_battle
-        from src.models import CardState
+        from src.engine.interactive_battle import execute_interactive_battle
         
         if not isinstance(action, AttackAction):
             return False
@@ -348,39 +347,23 @@ class Game:
         current_player = self.state.get_active_player()
         opponent = self.state.get_opponent()
         
-        # Execute the battle
-        result = execute_full_battle(
+        # Get the defending player object (not PlayerState, but the Player protocol object)
+        defender_player = self.player2 if self.state.active_player_id == self.state.player1.player_id else self.player1
+        
+        # Execute the battle with defender interaction
+        battle = execute_interactive_battle(
+            game=self.state,
             attacker_id=action.attacker_id,
-            defender_id=action.target_id,
-            game_state=self.state
+            target_id=action.target_id,
+            is_leader_attack=action.is_leader_attack,
+            defender_player=defender_player
         )
         
-        # Rest the attacker
-        if action.attacker_id == current_player.leader.id:
-            current_player.leader_state = CardState.RESTED
-        else:
-            current_player.character_states[action.attacker_id] = CardState.RESTED
-        
-        # Handle character destruction
-        if result.defender_destroyed:
-            # Find and remove destroyed character
-            for char in opponent.characters:
-                if char.id == action.target_id:
-                    opponent.characters.remove(char)
-                    opponent.trash.append(char)
-                    if char.id in opponent.character_states:
-                        del opponent.character_states[char.id]
-                    break
-        
-        # Handle life damage (if leader was attacked and not KO'd)
-        if action.target_id == opponent.leader.id and not result.defender_destroyed:
-            damage = result.damage_dealt
-            # Take cards from life to hand
-            for _ in range(min(damage, len(opponent.life_cards))):
-                if len(opponent.life_cards) > 0:
-                    card = opponent.life_cards.pop(0)
-                    opponent.hand.append(card)
-        
+        # Battle resolution already handles:
+        # - Resting the attacker
+        # - Character destruction
+        # - Life card damage
+        # So we just return success
         return True
     
     def _execute_attach_don(self, action: Action) -> bool:
