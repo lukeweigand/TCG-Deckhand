@@ -1,7 +1,7 @@
 # TCG Deckhand - MVP Task Tracker
 
 **Target Release:** December 2025  
-**Last Updated:** October 28, 2025
+**Last Updated:** October 29, 2025
 
 > This is a living document tracking all work needed to build the MVP. Tasks are organized by component and marked with status indicators.
 
@@ -40,19 +40,28 @@
 - ✅ **Add card CRUD operations** - save_card(), get_card_by_id/name/type(), search_cards(), delete_card()
 - ✅ **Add deck CRUD operations** - save_deck(), get_deck_by_id/name(), search_decks(), delete_deck()
 
-### 2.2 Game State Management
-- ⬜ **Design GameState class** - `src/engine/game_state.py` tracking hands, field, decks, discard
-- ⬜ **Implement player state** - Life, DON!! pool (total & active), active leader
-- ⬜ **Create zone management** - Hand, Field, Deck, Discard, DON!! deck operations
-- ⬜ **Write game initialization** - Shuffle decks, draw starting hands (5 cards), place leaders, DON!! setup
-- ⬜ **Add state serialization** - Convert GameState to/from JSON for saving
+### 2.2 Game State Management ✅
+- ✅ **Design GameState class** - `src/engine/game_state.py` with PlayerState tracking all One Piece TCG zones
+- ✅ **Implement player state** - Life cards, DON!! pool (total & active & attached), defeated flag, all zones
+- ✅ **Create zone management** - Hand, Character Area (max 5), Stage Area, Deck, Trash, DON!! deck operations
+- ✅ **Write game initialization** - Shuffle decks, draw starting hands (5 cards), place leaders, DON!! setup (10 per player)
+- ✅ **Add state serialization** - to_dict(), to_json(), __str__() methods for GameState and PlayerState
+- ✅ **Implement authentic One Piece TCG board layout** - Leader area, life cards, character area, stage area, all zones
+- ✅ **Implement Phase system** - REFRESH → DRAW → DON → MAIN → END with advance_phase()
+- ✅ **Implement win conditions** - Leader defeated (takes damage at 0 life) or deck out
+- ✅ **Create comprehensive test suite** - 35 tests for game state, initialization, and phases (all passing)
+- ✅ **Write demo script** - demo_game_state.py showing full game initialization and turn progression
 
 ### 2.3 Rules Engine
-- ⬜ **Define Move/Action interface** - `src/engine/action.py` for all possible actions
-- ⬜ **Implement legal move validation** - Check if action is valid given current state
-- ⬜ **Create turn phases system** - Refresh, Draw, DON!!, Main, End phases
-- ⬜ **Write move execution logic** - Apply actions and update game state
-- ⬜ **Add win/loss condition checker** - Leader defeated (life = 0) or deck out
+- ⬜ **Define Move/Action interface** - `src/engine/action.py` for all possible actions (PlayCard, Attack, ActivateAbility, etc.)
+- ⬜ **Implement legal move validation** - Check if action is valid given current state and phase
+- ⬜ **Create phase-specific rules** - What actions are allowed in each phase (REFRESH/DRAW/DON/MAIN/END)
+- ⬜ **Write move execution logic** - Apply actions and update game state (play card, attack leader/character, attach DON!!)
+- ⬜ **Implement damage system** - Deal damage to leader (remove life cards), defeat leader at 0 life
+- ⬜ **Add DON!! mechanics** - Attach/detach DON!! to cards, calculate power bonuses (+1000 per DON!!)
+- ⬜ **Implement card states** - ACTIVE (untapped), RESTED (tapped), transitions between states
+- ⬜ **Create counter step logic** - Handle counter abilities during attacks
+- ⬜ **Write comprehensive rules tests** - Cover all move types, edge cases, illegal moves
 
 ### 2.4 Game Loop
 - ⬜ **Create main game loop** - `src/engine/game.py` coordinating turns
@@ -220,16 +229,22 @@
 
 ## Current Sprint (Update Weekly)
 
-**Sprint Goal:** _Set sprint goal here_  
-**Sprint Dates:** _Start date - End date_
+**Sprint Goal:** Complete Phase 2 - Core Game Engine  
+**Sprint Dates:** October 28-29, 2025
 
 ### This Week's Focus:
-- [ ] Task 1
-- [ ] Task 2
-- [ ] Task 3
+- [x] Complete Phase 2.2 - Game State Management
+- [ ] Begin Phase 2.3 - Rules Engine
+- [ ] Implement action/move interface
 
 ### Completed This Week:
-- None yet
+- ✅ Phase 2.2 Game State Management (150 tests passing, 82% coverage)
+  - Created PlayerState class with all One Piece TCG zones
+  - Created GameState class with turn/phase management
+  - Implemented game initialization (shuffle, deal, DON!! setup)
+  - Fixed win condition: leader defeats requires damage at 0 life (not just reaching 0)
+  - Added comprehensive test suite (35 new tests)
+  - Created demo_game_state.py demonstration script
 
 ### Blockers:
 - None yet
@@ -239,10 +254,19 @@
 ## Notes & Decisions
 
 ### Architecture Decisions
-- _Record key technical decisions and their rationale here_
+- **Game State Management (Oct 29, 2025):** Implemented authentic One Piece TCG board layout with all official zones: Leader area (center top), Character area (max 5 cards), Stage area, Hand, Deck, Trash, and DON!! system (don_deck, don_pool, active_don, attached_don). Each zone serves a specific purpose in gameplay.
+- **Phase System (Oct 29, 2025):** Implemented turn phases as enums (REFRESH → DRAW → DON → MAIN → END) with automatic phase advancement and turn wrapping. The END phase automatically switches to the opponent's REFRESH phase.
+- **Dataclass Architecture (Oct 28, 2025):** Using Python dataclasses for Card, Deck, PlayerState, and GameState models provides clean serialization (to_dict/to_json) and immutable defaults while keeping code readable.
+- **Repository Pattern (Oct 28, 2025):** Database operations separated into card_operations.py and deck_operations.py provides clean separation of concerns and makes testing easier.
+
+### One Piece TCG Rules Clarifications
+- **Win Condition - Leader Defeat (Oct 29, 2025):** A player does NOT lose when their life reaches 0. They can continue playing at 0 life. They only lose when they take damage WHILE at 0 life (the "final blow"). This is tracked with a `defeated` flag on PlayerState.
+- **DON!! System (Oct 29, 2025):** Each player has 10 DON!! cards. DON!! can be attached to cards for +1000 power per DON!!. DON!! is managed through don_deck (10 cards), don_pool (total accumulated), active_don (available this turn), and attached_don (per-card bonuses).
+- **Life Cards (Oct 29, 2025):** Life cards are the top X cards from the deck (where X = leader's life value), placed face-down under the leader at game start. When the leader takes damage, life cards are removed.
 
 ### Learning Moments
-- _Track concepts learned, challenges overcome, and "aha!" moments_
+- **Test Fixtures Matter (Oct 29, 2025):** Initial tests failed because fixtures created players with empty decks/life, triggering immediate game-over. Fixed by initializing fixtures with valid game state. Lesson: Test fixtures should represent realistic scenarios.
+- **Mentorship Approach:** Building incrementally with tests after each feature provides confidence and catches bugs early. This "implement → test → verify" cycle is now standard workflow.
 
 ### Future Enhancements (Post-MVP)
 - Monte Carlo Tree Search AI implementation

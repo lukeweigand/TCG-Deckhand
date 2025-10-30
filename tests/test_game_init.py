@@ -189,8 +189,9 @@ class TestGameSummary:
         """Test that summary shows winner when game is over."""
         game = initialize_game("Alice", "Bob", valid_deck, valid_deck)
         
-        # Make player 1 lose all life
+        # Make player 1's leader defeated (One Piece TCG rule: must take damage at 0 life)
         game.player1.life_cards = []
+        game.player1.defeated = True
         
         summary = get_game_summary(game)
         

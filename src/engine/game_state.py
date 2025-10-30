@@ -68,6 +68,7 @@ class PlayerState:
     # Leader area (center top)
     leader: Optional[Leader] = None
     life_cards: List[Card] = field(default_factory=list)  # Face-down cards under leader
+    defeated: bool = False  # True when leader takes damage at 0 life (loses the game)
     
     # Character area (field - up to 5 characters max in official rules)
     characters: List[Character] = field(default_factory=list)
@@ -191,22 +192,34 @@ class GameState:
             self.current_phase = phase_order[current_index + 1]
     
     def is_game_over(self) -> bool:
-        """Check if the game has ended."""
-        # Game ends when a leader is defeated (no life cards remaining)
-        return (len(self.player1.life_cards) == 0 or 
-                len(self.player2.life_cards) == 0 or
+        """
+        Check if the game has ended.
+        
+        One Piece TCG Win Conditions:
+        - A player's leader is defeated (takes damage when at 0 life)
+        - A player cannot draw a card when required (deck out)
+        """
+        # Game ends when a leader is defeated (not just at 0 life!)
+        # In One Piece TCG, you can be at 0 life but still playing - 
+        # you lose when you take damage WHILE at 0 life
+        return (self.player1.defeated or 
+                self.player2.defeated or
                 len(self.player1.deck) == 0 or  # Deck out
                 len(self.player2.deck) == 0)
     
     def get_winner(self) -> Optional[PlayerState]:
-        """Get the winning player, if any."""
+        """
+        Get the winning player, if any.
+        
+        Returns the player who has NOT been defeated.
+        """
         if not self.is_game_over():
             return None
         
-        # Player with no life cards loses
-        if len(self.player1.life_cards) == 0:
+        # Player who is defeated loses
+        if self.player1.defeated:
             return self.player2
-        if len(self.player2.life_cards) == 0:
+        if self.player2.defeated:
             return self.player1
         
         # Player who decked out loses

@@ -192,19 +192,20 @@ class TestGameState:
         assert game_state.active_player_id == "player2"  # Switched players
     
     def test_is_game_over_life_zero(self, game_state):
-        """Test game over detection when life reaches zero."""
+        """Test game over detection when leader is defeated (One Piece TCG rule)."""
         assert not game_state.is_game_over()
         
-        # Remove all life cards from player 1
+        # Remove all life cards from player 1 - game is NOT over yet!
+        # In One Piece TCG, you can be at 0 life but still playing
         game_state.player1.life_cards = []
+        assert not game_state.is_game_over()
+        
+        # Game ends when leader takes damage WHILE at 0 life
+        game_state.player1.defeated = True
         assert game_state.is_game_over()
     
     def test_is_game_over_deck_out(self, game_state):
         """Test game over detection when deck is empty."""
-        # Add life cards so that's not the trigger
-        game_state.player1.life_cards = ["card1", "card2"]
-        game_state.player2.life_cards = ["card1", "card2"]
-        
         assert not game_state.is_game_over()
         
         # Empty player 1's deck
@@ -212,20 +213,18 @@ class TestGameState:
         assert game_state.is_game_over()
     
     def test_get_winner_life_zero(self, game_state):
-        """Test determining winner when a player loses all life."""
+        """Test determining winner when a leader is defeated."""
         assert game_state.get_winner() is None
         
-        # Player 1 loses all life
-        game_state.player1.life_cards = []
+        # Player 1's leader is defeated
+        game_state.player1.defeated = True
         winner = game_state.get_winner()
         assert winner == game_state.player2
         assert winner.name == "Bob"
     
     def test_get_winner_deck_out(self, game_state):
         """Test determining winner when a player decks out."""
-        # Set up so life isn't the trigger
-        game_state.player1.life_cards = ["card"]
-        game_state.player2.life_cards = ["card"]
+        assert game_state.get_winner() is None
         
         # Player 2 decks out
         game_state.player2.deck = []
