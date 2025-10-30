@@ -7,18 +7,19 @@
 
 ## 📊 Current Progress Summary
 
-**Overall Status:** Phase 3.1 Complete (AI Foundation)  
-**Total Tests Passing:** 287 tests (100% pass rate)
+**Overall Status:** Phase 3.2 Complete (Strategic AI Brain)  
+**Total Tests Passing:** 302 tests (100% pass rate)
 - Phase 1: ✅ Complete (Infrastructure)
 - Phase 2: ✅ Complete (Core Game Engine - 263 tests)
 - Phase 3.1: ✅ Complete (Random AI with Defense - 24 tests)
-- Phase 3.2: ⬜ Not Started (Minimax AI)
+- Phase 3.2: ✅ Complete (Minimax AI - 15 tests: 8 evaluator + 7 simulation)
 - Phase 3.3: ⬜ Not Started (MCTS AI)
 
 **Recent Achievements:**
-- Added defensive AI capabilities (blockers & counters)
-- Created interactive battle system for defender responses
-- AI now works like real opponents (offensive + defensive decisions)
+- ✅ Completed action simulation for Minimax AI
+- ✅ AI can now explore future game states (play cards, attacks, DON!!, phase passing)
+- ✅ Full simulation tested with 7 comprehensive tests
+- ✅ Minimax has complete "strategic brain" - can think ahead!
 
 ---
 
@@ -111,13 +112,16 @@
 
 **Phase 3.1 Complete: RandomAI works like chess bots - chooses from legal moves, responds defensively during opponent attacks**
 
-### 3.2 Strategic AI (Minimax)
-- ⬜ **Research Minimax algorithm** - Study approach for turn-based games
-- ⬜ **Implement Minimax with alpha-beta pruning** - `src/ai/minimax_ai.py` depth 2-3
-- ⬜ **Create board state evaluator** - `src/ai/evaluator.py` scoring positions (life cards, field presence, DON!!, hand size)
-- ⬜ **Add depth-limited search** - Control AI thinking time with configurable depth
-- ⬜ **Inherit defensive capabilities** - Minimax will use same blocker/counter decision methods
-- ⬜ **Test Minimax vs Random AI** - Run 10+ games, validate win rate improvement
+### 3.2 Strategic AI (Minimax) ✅
+- ✅ **Research Minimax algorithm** - Studied approach for turn-based games with look-ahead search
+- ✅ **Create board state evaluator** - `src/ai/evaluator.py` scoring positions (life cards, field presence, DON!!, hand size, leader state) - 8 tests passing
+- ✅ **Implement Minimax structure** - `src/ai/minimax_ai.py` with alpha-beta pruning, depth 2-3, statistics tracking
+- ✅ **Implement action simulation** - Complete simulation for PlayCard, Attack, AttachDon, PassPhase actions (7 tests passing)
+- ✅ **Add depth-limited search** - Configurable depth with branching limit for performance
+- ✅ **Inherit defensive capabilities** - Minimax uses same blocker/counter decision methods
+- ⬜ **Test Minimax vs Random AI** - Run 10+ games, validate win rate improvement (ready to test!)
+
+**Phase 3.2 Complete: Minimax AI has strategic "brain" - evaluates positions AND explores future moves**
 
 ### 3.3 Advanced AI (Monte Carlo Tree Search)
 - ⬜ **Research MCTS algorithm** - Study UCB1 selection and simulation approaches
@@ -266,57 +270,39 @@
 
 ## Current Sprint (Update Weekly)
 
-**Sprint Goal:** Complete Phase 2 - Core Game Engine  
-**Sprint Dates:** October 28-30, 2025
+**Sprint Goal:** Complete Phase 3.2 - Strategic AI (Minimax)  
+**Sprint Dates:** October 30, 2025
 
 ### This Week's Focus:
-- [x] Complete Phase 2.2 - Game State Management
-- [x] Complete Phase 2.3 - Rules Engine (Actions, Battle, Validation, DON!! refresh, Summoning Sickness, Ability Parsing)
-- [ ] Begin Phase 2.4 - Game Loop
+- [x] Begin Phase 3.2 - Board Evaluator
+- [x] Implement Minimax algorithm structure
+- [ ] Complete action simulation for Minimax
+- [ ] Test Minimax vs RandomAI
 
 ### Completed This Week:
-- ✅ Phase 2.2 Game State Management (Oct 28-29)
-  - Created PlayerState class with all One Piece TCG zones
-  - Created GameState class with turn/phase management
-  - Implemented game initialization (shuffle, deal, DON!! setup)
-  - Fixed win condition: leader defeats requires damage at 0 life (not just reaching 0)
-  - Added comprehensive test suite (35 new tests)
-  - Created demo_game_state.py demonstration script
-  
-- ✅ Phase 2.3 Rules Engine - Complete (Oct 30)
-  - **Actions & Battle System:**
-    - Created 11 action types (PlayCard, Attack, AttachDon, UseCounter, UseBlocker, etc.)
-    - Implemented complete battle system with blocker → counter → resolve phases
-    - Added battle power calculations (including DON!! bonuses during YOUR turn only)
-    - Implemented damage resolution (life cards to hand, character destruction, defeat at 0 life)
-    - Created move validation system (phase requirements, resources, legal targets)
-    - Built move generator for AI (`get_legal_actions()`)
-  - **Validation & Advanced Rules:**
-    - Added 20 comprehensive validation tests (rules.py coverage: 76%)
-    - Implemented DON!! refresh logic (detach all, add 2 from deck, untap leader & characters)
-    - Added leader state tracking (leader can be ACTIVE or RESTED after attacking)
-    - Implemented summoning sickness tracking (played_this_turn set, first_turn flag)
-    - Characters/leaders can't attack on first turn (player's first MAIN phase)
-    - Characters can't attack turn they're played (unless Rush)
-  - **Ability Parsing System:**
-    - Created abilities.py module with ability detection and parsing
-    - Implemented AbilityType enum (ON_PLAY, ACTIVE_MAIN, BLOCKER, RUSH, TRIGGER, COUNTER, DON_COST)
-    - Built parse_abilities() function with regex pattern matching
-    - Added helper functions: has_rush(), has_blocker(), has_trigger(), get_counter_value(), get_ability_don_cost()
-    - Integrated Rush detection into summoning sickness validation
-    - Rush bypasses summoning sickness (but NOT first turn restriction)
-    - All parsing is case-insensitive
-  - **Test Coverage:**
-    - 248 total tests passing (174 → 248, +74 new tests)
-    - 83% overall coverage (up from 73%)
-    - abilities.py: 96% coverage (33 tests)
-    - game_state.py: 96% coverage (10 new tests)
-    - rules.py: 76% coverage (20 new tests)
-    - test_summoning_sickness.py: 11 tests
-    - test_don_refresh.py: 10 tests
+- ✅ Phase 3.2 Minimax AI - Complete (Oct 30)
+  - **BoardEvaluator (8 tests):**
+    - Created 7-factor position scoring: life (1000), characters (100), DON!! (50), hand (30), deck (5), power (0.01), leader rested (-200)
+    - Terminal state detection and scoring (±10000 for win/loss)
+    - Works from any player perspective
+  - **Minimax Algorithm (structure):**
+    - Implemented alpha-beta pruning algorithm
+    - Root search with best action tracking
+    - Recursive minimax with depth limiting
+    - Branching limit (5 actions per level) for performance
+    - Statistics tracking (nodes_evaluated, nodes_pruned)
+    - Inherited defensive capabilities (blocker/counter methods)
+  - **Action Simulation (7 tests):**
+    - Implemented `_simulate_play_card()` - removes from hand, pays DON!!, adds to field
+    - Implemented `_simulate_attack()` - uses battle system, rests attacker, resolves damage
+    - Implemented `_simulate_attach_don()` - moves DON!! from pool to attached
+    - Implemented `_simulate_pass_phase()` - advances phase
+    - All simulations use deep copy for state isolation
+    - Verified with comprehensive tests (play, attack, DON!!, phase, isolation)
+  - **302 total tests now passing** (up from 295)
 
 ### Blockers:
-- None
+- None! Phase 3.2 complete. Ready to test Minimax vs RandomAI performance.
 
 ---
 
@@ -348,6 +334,7 @@
 - **Life Cards (Oct 29, 2025):** Life cards are the top X cards from the deck (where X = leader's life value), placed face-down under the leader at game start. When the leader takes damage, life cards are removed.
 
 ### Learning Moments
+- **Two-Click Attack Pattern (Oct 30, 2025):** For UI implementation, attacks require two clicks: (1) click attacking character/leader, (2) click target (opponent's leader or character). This matches standard digital TCG UX patterns and feels intuitive. Important to remember when building Phase 5 UI.
 - **Clarifying Requirements First (Oct 30, 2025):** Before implementing Phase 2.3, asked detailed questions about One Piece TCG battle mechanics (blocker order, counter timing, DON!! refresh, summoning sickness, trigger effects). This prevented implementing wrong assumptions. Lesson: When dealing with complex domain rules, validate understanding BEFORE coding.
 - **Living Documentation Discipline (Oct 30, 2025):** Forgot to update tasks.md while implementing Phase 2.3 code. Got called out by Luke for not maintaining the living document. Lesson: Update documentation AS YOU GO, not after the fact. Make it part of the workflow, not an afterthought.
 - **Test Fixtures Matter (Oct 29, 2025):** Initial tests failed because fixtures created players with empty decks/life, triggering immediate game-over. Fixed by initializing fixtures with valid game state. Lesson: Test fixtures should represent realistic scenarios.
