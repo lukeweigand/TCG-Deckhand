@@ -178,6 +178,37 @@ class GameState:
             else self.player1.player_id
         )
     
+    def refresh_don(self, player: PlayerState):
+        """
+        Refresh DON!! during REFRESH phase.
+        
+        One Piece TCG DON!! Refresh Rules:
+        1. Detach all DON!! from characters/leaders and return to active DON!!
+        2. Add 2 more DON!! from don_deck to don_pool (capped at 10 total)
+        3. Untap all characters (set to ACTIVE)
+        
+        Args:
+            player: The player whose DON!! to refresh
+        """
+        # Step 1: Detach all DON!! and return to active DON!!
+        total_detached = sum(player.attached_don.values())
+        player.attached_don.clear()
+        player.active_don += total_detached
+        
+        # Step 2: Add 2 more DON!! from don_deck to don_pool (max 10 total)
+        don_to_add = min(2, len(player.don_deck))  # Can't add more than we have
+        don_to_add = min(don_to_add, 10 - player.don_pool)  # Can't exceed 10 total
+        
+        for _ in range(don_to_add):
+            if player.don_deck:
+                player.don_deck.pop()  # Remove from don_deck
+                player.don_pool += 1
+                player.active_don += 1
+        
+        # Step 3: Untap all characters (set to ACTIVE)
+        for char_id in player.character_states:
+            player.character_states[char_id] = CardState.ACTIVE
+    
     def advance_phase(self):
         """Move to the next phase of the turn."""
         phase_order = [Phase.REFRESH, Phase.DRAW, Phase.DON, Phase.MAIN, Phase.END]
@@ -188,8 +219,15 @@ class GameState:
             self.switch_active_player()
             self.current_turn += 1
             self.current_phase = Phase.REFRESH
+            # Refresh DON!! for the new active player
+            self.refresh_don(self.get_active_player())
         else:
-            self.current_phase = phase_order[current_index + 1]
+            # Moving to REFRESH phase mid-turn (shouldn't normally happen, but handle it)
+            if self.current_phase == Phase.END and phase_order[current_index + 1] == Phase.REFRESH:
+                self.current_phase = Phase.REFRESH
+                self.refresh_don(self.get_active_player())
+            else:
+                self.current_phase = phase_order[current_index + 1]
     
     def is_game_over(self) -> bool:
         """
