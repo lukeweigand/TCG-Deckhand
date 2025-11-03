@@ -277,9 +277,25 @@ def get_legal_actions(game: GameState, player_id: str) -> List[Action]:
                     )
                     legal_actions.append(action)
         
-        # Can attack with ACTIVE characters
+        # Can attack with ACTIVE characters (if they don't have summoning sickness)
         for char in player.characters:
             if player.character_states.get(char.id) != CardState.RESTED:
+                # Check for summoning sickness
+                has_summoning_sickness = False
+                
+                # First turn restriction
+                if player.first_turn:
+                    has_summoning_sickness = True
+                # Played this turn restriction (unless has Rush)
+                elif char.id in player.played_this_turn:
+                    from src.engine.abilities import has_rush
+                    if not has_rush(char):
+                        has_summoning_sickness = True
+                
+                # Skip if has summoning sickness
+                if has_summoning_sickness:
+                    continue
+                
                 # Can attack leader
                 action = AttackAction(
                     player_id=player_id,

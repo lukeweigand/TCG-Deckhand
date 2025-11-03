@@ -247,6 +247,10 @@ class Game:
         # Get current player
         current_player_obj = self.player1 if self.state.active_player_id == self.state.player1.player_id else self.player2
         
+        # Safety: track failed actions to prevent infinite loops
+        failed_attempts = 0
+        max_failed_attempts = 5
+        
         # Loop until player passes
         while self.state.current_phase == Phase.MAIN:
             # Request action from player
@@ -262,7 +266,23 @@ class Game:
             
             if not success:
                 print("Action failed, requesting new action")
+                failed_attempts += 1
+                
+                # Safety: if too many failures, force pass to prevent infinite loop
+                if failed_attempts >= max_failed_attempts:
+                    print(f"Too many failed actions ({failed_attempts}), forcing pass")
+                    from src.engine.actions import PassPhaseAction, ActionType
+                    pass_action = PassPhaseAction(
+                        player_id=self.state.active_player_id,
+                        action_type=ActionType.PASS_PHASE
+                    )
+                    self.execute_action(pass_action)
+                    break
+                
                 continue
+            else:
+                # Reset counter on successful action
+                failed_attempts = 0
     
     def _handle_end_phase(self) -> None:
         """Handle automatic END phase and switch to next player."""
