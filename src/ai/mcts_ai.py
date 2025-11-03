@@ -14,7 +14,7 @@ from src.ai.mcts_node import MCTSNode
 from src.ai.random_ai import RandomAI
 from src.engine.game_state import GameState, Phase, CardState
 from src.engine.actions import Action, PassPhaseAction
-from src.engine.game import Game, GameResult
+from src.engine.game import Game, GameResult, GameConfig
 from src.engine.rules import get_legal_actions
 from src.engine.abilities import has_blocker, get_counter_value
 from src.models import Event
@@ -157,8 +157,8 @@ class MCTSAI:
             node = node.add_child(action, new_legal_actions)
         
         # Phase 3: Simulation - Play out game randomly from this state
-        # For now, use a simplified heuristic evaluation instead of full simulation
-        reward = self._evaluate_position(state_copy, game_state.active_player_id)
+        # Run a full rollout (random playout) to terminal state
+        reward = self._simulate_rollout(state_copy, game_state.active_player_id)
         
         # Phase 4: Backpropagation - Update all ancestor nodes
         while node is not None:
@@ -167,27 +167,108 @@ class MCTSAI:
             # Flip reward for opponent's perspective
             reward = 1.0 - reward
     
-    def _evaluate_position(self, game_state: GameState, player_id: str) -> float:
-        """Evaluate position quality using heuristic evaluation.
+    def _simulate_rollout(self, game_state: GameState, player_id: int) -> float:
+        """Simulate a random game playout from the given state.
         
-        This is a simplified approach - instead of full simulation, we use
-        the board evaluator to estimate position value.
+        This is the true MCTS simulation phase - we actually play the game
+        to completion using random action selection, then return the result.
         
         Args:
-            game_state: Game state to evaluate
-            player_id: Player from whose perspective to evaluate
+            game_state: Starting state for simulation
+            player_id: Player from whose perspective to evaluate (1 or 2)
             
         Returns:
-            Reward estimate [0, 1] where 1.0 = winning, 0.0 = losing
+            Reward: 1.0 for win, 0.0 for loss, 0.5 for timeout/draw
         """
-        from src.ai.evaluator import BoardEvaluator
-        evaluator = BoardEvaluator()
-        score = evaluator.evaluate(game_state, player_id)
+        # Create dummy players for simulation (both use random policy)
+        dummy_p1 = RandomAI(player_id="1")
+        dummy_p2 = RandomAI(player_id="2")
         
-        # Normalize score to [0, 1] range
-        # Scores typically range from -1000 to +1000
-        normalized = (score + 1000) / 2000
-        return max(0.0, min(1.0, normalized))
+        # Create a dummy config (we only need the game state)
+        dummy_config = GameConfig(
+            player1_deck=[],
+            player2_deck=[],
+            player1_leader=game_state.player1.leader,
+            player2_leader=game_state.player2.leader,
+            starting_player=1
+        )
+        
+        # Create Game instance with dummy players
+        simulation_game = Game(dummy_config, dummy_p1, dummy_p2)
+        
+        # Set the game state to our current position
+        simulation_game.state = copy.deepcopy(game_state)
+        
+        # Safety limit to prevent infinite games
+        MAX_ROLLOUT_TURNS = 50
+        MAX_ROLLOUT_ACTIONS = 1000
+        action_count = 0
+        turn_count = 0
+        starting_turn = game_state.current_turn
+        
+        # Play randomly until game ends
+        while True:
+            # Check if game is over
+            result = simulation_game._check_win_condition()
+            if result is not None:
+                # Game ended naturally
+                break
+            
+            # Check safety limits
+            action_count += 1
+            current_turn = simulation_game.state.current_turn
+            turn_count = current_turn - starting_turn
+            
+            if action_count >= MAX_ROLLOUT_ACTIONS or turn_count >= MAX_ROLLOUT_TURNS:
+                # Timeout - return draw
+                return 0.5
+            
+            # Get legal actions for current player
+            legal_actions = get_legal_actions(
+                simulation_game.state,
+                simulation_game.state.active_player_id
+            )
+            
+            if not legal_actions:
+                # No legal actions - game should be over
+                break
+            
+            # Select random action
+            action = self._select_rollout_action(legal_actions, simulation_game.state)
+            
+            # Execute action
+            try:
+                simulation_game.execute_action(action)
+            except Exception:
+                # If action fails, stop simulation and return draw
+                return 0.5
+        
+        # Determine reward based on winner
+        result = simulation_game._check_win_condition()
+        
+        if result == GameResult.PLAYER_1_WIN:
+            return 1.0 if player_id == 1 else 0.0
+        elif result == GameResult.PLAYER_2_WIN:
+            return 1.0 if player_id == 2 else 0.0
+        else:
+            # Draw or timeout
+            return 0.5
+    
+    def _select_rollout_action(self, legal_actions: List[Action], game_state: GameState) -> Action:
+        """Select an action during rollout simulation.
+        
+        For now, uses uniform random selection. Could be enhanced with
+        heuristics or light playouts for better simulation quality.
+        
+        Args:
+            legal_actions: Available actions to choose from
+            game_state: Current game state (for potential heuristics)
+            
+        Returns:
+            Selected action
+        """
+        # Simple uniform random selection
+        return random.choice(legal_actions)
     
     def _is_terminal(self, game_state: GameState) -> bool:
         """Check if the game state is terminal (game over).

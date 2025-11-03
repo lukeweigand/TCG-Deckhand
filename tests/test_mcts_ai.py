@@ -35,7 +35,7 @@ def sample_deck():
         for i in range(10)
     ]
     
-    return Deck(leader=leader, cards=characters)
+    return Deck(name="Test Deck", leader=leader, cards=characters)
 
 
 class TestMCTSDifficulty:
