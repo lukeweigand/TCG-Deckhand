@@ -127,23 +127,58 @@
 
 **Phase 3.2 Complete: Minimax AI decisively beats RandomAI with 90% win rate!**
 
-### 3.3 Advanced AI (Monte Carlo Tree Search) ✅
+### 3.3 Advanced AI (Monte Carlo Tree Search) ✅ ✅
 - ✅ **Research MCTS algorithm** - Studied UCB1 selection, simulation-based search, and time-budgeted iterative deepening
 - ✅ **Implement MCTSNode** - `src/ai/mcts_node.py` with visit statistics, UCB1 calculation, tree navigation (17 tests passing)
 - ✅ **Implement MCTS algorithm** - `src/ai/mcts_ai.py` with 4-phase search (Selection, Expansion, Simulation, Backpropagation)
 - ✅ **Add time-based search** - Difficulty levels: Easy (0.5s), Medium (1.0s), Hard (2.0s) thinking budgets
-- ✅ **Implement simulation** - Heuristic evaluation-based (simplified, no full rollouts)
+- ✅ **Implement full rollouts** - True MCTS with random game playouts (not just static eval)
 - ✅ **Add defensive capabilities** - get_defensive_blocker() and get_defensive_counters() with heuristic evaluation
 - ✅ **Write unit tests** - 25 tests passing (17 MCTSNode + 8 MCTSAI core tests)
 - ✅ **Fix performance tests** - Game initialization refactored, all 4 performance tests passing
-- ✅ **Test MCTS vs Random** - **100% win rate (10/10 games)**, 2421 iterations/game, 19 turns avg
-- ✅ **Test MCTS vs Minimax** - **0% win rate (0/5 games)** - needs full rollout simulation to compete
-- ✅ **Profile performance** - 2400 iter/sec, game execution (not AI) is bottleneck (~96% of time)
-- ✅ **Document findings** - Comprehensive performance report in `docs/mcts-performance-results.md`
-- ⬜ **Tune exploration weight** - Default 1.414 (sqrt(2)) works well vs Random, untested vs strong opponents
-- ⬜ **Implement full rollouts** - Optional enhancement (would require 2-3 days, improves vs Minimax)
+- ✅ **Test MCTS vs Random** - **100% win rate** (701 iterations/game with rollouts)
+- ✅ **Test MCTS vs Minimax** - **0% win rate** - Random rollouts can't compete with perfect lookahead
+- ✅ **Profile performance** - Rollouts cost 40% fewer iterations but maintain strategic strength vs Random
+- ✅ **Document findings** - Comprehensive analysis in `docs/mcts-rollout-analysis.md`
 
-**Phase 3.3 Complete: MCTS dominates RandomAI, loses to Minimax (static eval limitation)**
+**Phase 3.3 Complete: True MCTS implementation with full rollouts. Perfect for Easy/Medium difficulty. Use MinimaxAI for Hard/Expert.**
+**AI Lineup: Easy (Random/MCTS 0.5s) → Medium (MCTS 1.0s) → Hard (Minimax d=1) → Expert (Minimax d=2)**
+
+---
+
+## Phase 4: Strategic Analysis Features 🎯
+
+**Goal:** Build tools that help competitive players analyze positions, calculate win probability, and improve their gameplay.
+
+### 4.1 Win Advantage Calculator ✅
+- ✅ **Design evaluation metrics** - Defined score → win% conversion using sigmoid function
+- ✅ **Implement position scorer** - `score_to_probability()` converts evaluation to 0-100% win probability
+- ✅ **Add confidence intervals** - Confidence based on game turn, position clarity, volatility, material balance
+- ✅ **Create simple API** - `calculate_win_advantage(game_state, player_id)` returns comprehensive result
+- ✅ **Write unit tests** - 29 tests covering sigmoid math, interpretations, confidence, explanations (all passing)
+- ⬜ **Validate with AI games** - Optional: Run tournaments to measure prediction accuracy (can do later)
+
+**Phase 4.1 Complete: Win Advantage Calculator operational! Converts positions to intuitive win percentages.**
+
+---
+
+### 4.2 Best Move Suggestion 🎲
+- ⬜ **Define "best move" criteria** - Tactical gain, strategic positioning, risk assessment
+- ⬜ **Implement move ranker** - Use MinimaxAI or MCTS to evaluate all legal actions
+- ⬜ **Add move explanations** - Generate text explaining why move is good ("Attacks leader for 3000 damage")
+- ⬜ **Show top 3 moves** - Best move + alternatives with reasoning
+- ⬜ **Create simple API** - `suggest_best_moves(game_state, count=3) -> List[MoveRecommendation]`
+- ⬜ **Write unit tests** - Test obvious tactical positions
+
+### 4.3 Strategic Insights 🧠
+- ⬜ **Identify tactical patterns** - Recognize threats, pins, forks in position
+- ⬜ **Calculate tempo advantage** - Who's ahead in development/board presence?
+- ⬜ **Assess risk levels** - How dangerous is current position?
+- ⬜ **Generate natural language insights** - "You're ahead by 2000 power but opponent has 3 blockers"
+- ⬜ **Create insights API** - `analyze_position(game_state) -> List[Insight]`
+- ⬜ **Write unit tests** - Test pattern recognition
+
+**Phase 4 Status: Not started - Ready to begin! 🚀**
 
 ---
 
