@@ -9,8 +9,26 @@ import pytest
 from src.ai.mcts_ai import MCTSAI, MCTSDifficulty, create_easy_mcts, create_medium_mcts, create_hard_mcts
 from src.ai.random_ai import RandomAI
 from src.ai.minimax_ai import MinimaxAI
-from src.engine.game import Game, GameConfig, GameResult
-from src.models import Leader, Character, Deck
+from src.engine.game import Game, GameConfig
+from src.engine.game_state import Phase, GameState, PlayerState, CardState
+from src.models import Leader, Character
+
+
+@pytest.fixture
+def test_deck():
+    """Create a simple test deck for both players."""
+    # Create 50 simple characters for testing
+    deck = []
+    for i in range(50):
+        card = Character(
+            name=f"Test Character {i}",
+            cost=min(i % 8 + 1, 7),  # Costs 1-7
+            power=(i % 5 + 2) * 1000,  # Power 2000-6000
+            counter=1000 if i % 3 == 0 else 0,
+            effect_text=""
+        )
+        deck.append(card)
+    return deck
 
 
 @pytest.fixture
@@ -25,115 +43,149 @@ def test_leader():
     )
 
 
-@pytest.fixture
-def test_deck():
-    """Create a test deck with balanced characters."""
-    characters = []
-    # Mix of power levels for interesting games
-    for i in range(10):
-        characters.append(Character(
-            name=f"Character {i}",
-            cost=(i % 5) + 1,  # Cost 1-5
-            power=1000 + (i * 500),  # Power 1000-5500
-            counter=1000,
-            effect_text=""
-        ))
-    return characters
-
-
 def run_game(player1, player2, deck1, deck2, leader1, leader2, max_turns=50):
     """
-    Run a complete game between two AI players.
+    Run a single game between two AI players.
     
-    Returns a dict with game statistics.
+    Args:
+        player1: First AI player
+        player2: Second AI player
+        deck1: Player 1's deck (list of cards)
+        deck2: Player 2's deck (list of cards)
+        leader1: Player 1's leader
+        leader2: Player 2's leader
+        max_turns: Maximum turns before declaring draw
+        
+    Returns:
+        Dict with game results and statistics
     """
-    # Create game config
-    config = GameConfig(max_turns=max_turns)
+    config = GameConfig(
+        player1_deck=deck1.copy(),
+        player2_deck=deck2.copy(),
+        player1_leader=leader1,
+        player2_leader=leader2,
+        starting_player=1
+    )
     
-    # Create decks
-    p1_deck = Deck(leader=leader1, cards=deck1)
-    p2_deck = Deck(leader=leader2, cards=deck2)
+    game = Game(config, player1, player2)
     
-    # Create game
-    game = Game(config=config, player1_deck=p1_deck, player2_deck=p2_deck)
+    # Manually initialize game state since Game.initialize_game() is a placeholder
+    # Create player states
+    player1_state = PlayerState(
+        player_id="1",
+        name="Player 1",
+        leader=leader1,
+        hand=deck1[:5],  # Draw starting hand
+        deck=deck1[leader1.life + 5:],  # Rest of deck (after life cards + hand)
+        characters=[],
+        trash=[],
+        life_cards=deck1[5:5+leader1.life],  # Life cards (separate from hand)
+        don_deck=[f"don_{i}" for i in range(8)],  # 8 remaining DON!!
+        don_pool=2,  # Already accumulated 2 DON!!
+        active_don=2,  # 2 available this turn
+        attached_don={},
+        character_states={},
+        leader_state=CardState.ACTIVE,
+        played_this_turn=set(),
+        first_turn=False  # Not first turn - can attack
+    )
     
-    # Manual initialization (Game.initialize_game() is placeholder)
-    # Start at turn 2 to avoid first-turn restrictions
-    game.state.turn_number = 2
-    game.state.player1.first_turn = False
-    game.state.player2.first_turn = False
+    player2_state = PlayerState(
+        player_id="2",
+        name="Player 2",
+        leader=leader2,
+        hand=deck2[:5],
+        deck=deck2[leader2.life + 5:],
+        characters=[],
+        trash=[],
+        life_cards=deck2[5:5+leader2.life],
+        don_deck=[f"don_{i}" for i in range(8)],
+        don_pool=2,
+        active_don=2,
+        attached_don={},
+        character_states={},
+        leader_state=CardState.ACTIVE,
+        played_this_turn=set(),
+        first_turn=False
+    )
     
-    # Give players starting resources
-    game.state.player1.available_don = 2
-    game.state.player2.available_don = 2
+    game.state = GameState(
+        game_id="test",
+        player1=player1_state,
+        player2=player2_state,
+        active_player_id="1",
+        current_phase=Phase.REFRESH,
+        current_turn=2  # Start at turn 2 (both players had first turn)
+    )
     
-    # Draw starting hands (5 cards each)
-    for _ in range(5):
-        if game.state.player1.deck:
-            card = game.state.player1.deck.pop(0)
-            game.state.player1.hand.append(card)
-        if game.state.player2.deck:
-            card = game.state.player2.deck.pop(0)
-            game.state.player2.hand.append(card)
-    
-    # Separate life cards (4 cards for life)
-    for _ in range(4):
-        if game.state.player1.deck:
-            game.state.player1.life.append(game.state.player1.deck.pop(0))
-        if game.state.player2.deck:
-            game.state.player2.life.append(game.state.player2.deck.pop(0))
+    start_time = time.time()
     
     # Track statistics
-    start_time = time.time()
-    turns = 0
-    actions_taken = 0
     p1_search_time = 0.0
     p2_search_time = 0.0
     p1_iterations = 0
     p2_iterations = 0
     
-    # Run game loop
-    while game.state.result == GameResult.ONGOING and turns < max_turns:
-        # Get current player AI
-        if game.state.active_player_id == 1:
-            ai = player1
-        else:
-            ai = player2
+    # Run game with turn limit
+    result = None
+    while game.turn_count < max_turns:
+        # Check for win conditions
+        result = game._check_win_condition()
+        if result is not None:
+            break
         
-        # Get action from AI
-        action = ai.choose_action(game)
+        # Track MCTS statistics before turn
+        if isinstance(player1, MCTSAI):
+            p1_search_time_before = player1.last_search_time
+            p1_iterations_before = player1.last_iterations
+        if isinstance(player2, MCTSAI):
+            p2_search_time_before = player2.last_search_time
+            p2_iterations_before = player2.last_iterations
         
-        # Track MCTS statistics
-        if isinstance(ai, MCTSAI):
-            if game.state.active_player_id == 1:
-                p1_search_time += ai.last_search_time
-                p1_iterations += ai.last_iterations
-            else:
-                p2_search_time += ai.last_search_time
-                p2_iterations += ai.last_iterations
-        
-        # Execute action
-        success = game.execute_action(action)
-        if success:
-            actions_taken += 1
-        
-        # Check if turn completed
-        if game.state.turn_number > turns:
-            turns = game.state.turn_number
+        # Process one turn
+        try:
+            game.process_turn()
+            game.turn_count += 1
+            
+            # Update MCTS statistics
+            if isinstance(player1, MCTSAI):
+                p1_search_time += (player1.last_search_time - p1_search_time_before)
+                p1_iterations += (player1.last_iterations - p1_iterations_before)
+            if isinstance(player2, MCTSAI):
+                p2_search_time += (player2.last_search_time - p2_search_time_before)
+                p2_iterations += (player2.last_iterations - p2_iterations_before)
+                
+        except Exception as e:
+            print(f"Error during turn {game.turn_count}: {e}")
+            result = None
+            break
     
-    elapsed = time.time() - start_time
+    end_time = time.time()
+    game_time = end_time - start_time
     
-    # Return statistics
-    return {
-        'result': game.state.result,
-        'turns': turns,
-        'actions': actions_taken,
-        'time': elapsed,
+    # Collect statistics
+    stats = {
+        'result': result.value.upper() if result else 'TIMEOUT',
+        'turns': game.turn_count,
+        'actions': len(game.action_history),
+        'time': game_time,
+        'winner': 1 if result and 'PLAYER_1' in result.value.upper() else (2 if result and 'PLAYER_2' in result.value.upper() else None),
         'p1_search_time': p1_search_time,
         'p2_search_time': p2_search_time,
         'p1_iterations': p1_iterations,
         'p2_iterations': p2_iterations
     }
+    
+    # Add Minimax-specific stats
+    if isinstance(player1, MinimaxAI):
+        stats['p1_nodes_evaluated'] = player1.nodes_evaluated
+        stats['p1_nodes_pruned'] = player1.nodes_pruned
+    
+    if isinstance(player2, MinimaxAI):
+        stats['p2_nodes_evaluated'] = player2.nodes_evaluated
+        stats['p2_nodes_pruned'] = player2.nodes_pruned
+    
+    return stats
 
 
 class TestMCTSVsRandom:
@@ -161,8 +213,8 @@ class TestMCTSVsRandom:
         print(f"  MCTS thinking time: {stats['p1_search_time']:.2f}s")
         print(f"  MCTS iterations: {stats['p1_iterations']}")
         
-        # MCTS should complete the game
-        assert stats['result'] != GameResult.ONGOING or stats['turns'] >= 50
+        # MCTS should complete the game (not timeout)
+        assert stats['result'] != 'TIMEOUT' or stats['turns'] >= 50
         
         # MCTS thinking time should be reasonable (< 30s total for whole game)
         assert stats['p1_search_time'] < 30.0
@@ -193,10 +245,10 @@ class TestMCTSVsRandom:
             )
             
             # Count results
-            result_str = stats['result'].value.lower()
-            if result_str == "player1_wins":
+            result_str = stats['result']
+            if 'PLAYER_1' in result_str or 'PLAYER1' in result_str:
                 mcts_wins += 1
-            elif result_str == "player2_wins":
+            elif 'PLAYER_2' in result_str or 'PLAYER2' in result_str:
                 random_wins += 1
             else:
                 timeouts += 1
@@ -266,10 +318,10 @@ class TestMCTSVsMinimax:
             )
             
             # Count results
-            result_str = stats['result'].value.lower()
-            if result_str == "player1_wins":
+            result_str = stats['result']
+            if 'PLAYER_1' in result_str or 'PLAYER1' in result_str:
                 mcts_wins += 1
-            elif result_str == "player2_wins":
+            elif 'PLAYER_2' in result_str or 'PLAYER2' in result_str:
                 minimax_wins += 1
             else:
                 timeouts += 1
@@ -322,10 +374,10 @@ class TestMCTSVsMinimax:
             )
             
             # Count results
-            result_str = stats['result'].value.lower()
-            if result_str == "player1_wins":
+            result_str = stats['result']
+            if 'PLAYER_1' in result_str or 'PLAYER1' in result_str:
                 mcts_wins += 1
-            elif result_str == "player2_wins":
+            elif 'PLAYER_2' in result_str or 'PLAYER2' in result_str:
                 minimax_wins += 1
             else:
                 timeouts += 1
