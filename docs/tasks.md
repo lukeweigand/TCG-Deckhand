@@ -192,16 +192,32 @@
 
 ---
 
-## Phase 5: User Interface
+## Phase 5: User Interface (Tkinter)
 
-### 5.1 UI Framework Decision
-- ⬜ **Research UI options** - Compare Electron vs Tkinter vs Kivy
-- ⬜ **Create proof-of-concept** - Simple window with buttons
-- ⬜ **Decide on framework** - Document choice and rationale
-- ⬜ **Set up UI project structure** - Frontend files, assets folder
+**Framework Decision: Tkinter** ✅
+- Pure Python (no new languages to learn)
+- Direct integration with game engine
+- Faster development, fewer errors
+- Can upgrade to Electron later for polish
 
-### 5.2 Core UI Components
-- ⬜ **Design main game window** - Sketch layout (zones, buttons, info displays)
+### 5.1 UI Framework Setup ✅
+- ✅ **Research UI options** - Compared Electron vs Tkinter vs Kivy
+- ✅ **Decide on framework** - Chose Tkinter for MVP speed and simplicity
+- ✅ **Create proof-of-concept** - Working main menu with navigation!
+- ✅ **Set up UI project structure** - Created src/ui/ with screens
+
+**Phase 5.1 COMPLETE: UI Framework established with working navigation! 🎮**
+
+### 5.2 Main Menu & Navigation
+- ✅ **Create main application window** - 1024x768 with dark theme
+- ✅ **Build main menu** - Title, buttons (New Game, Deck Builder, Settings, Exit)
+- ✅ **Implement difficulty selection** - 4 difficulty cards (Easy/Medium/Hard/Expert)
+- ✅ **Add screen navigation** - Switch between menu screens seamlessly
+- ⬜ **Create deck builder placeholder** - Basic screen (full implementation in 5.5)
+- ⬜ **Create game board placeholder** - Basic screen (full implementation in 5.3)
+
+### 5.3 Core Game Board UI
+- ⬜ **Design game board layout** - Sketch zones, buttons, info displays
 - ⬜ **Implement card display** - Visual representation of cards
 - ⬜ **Create game board zones** - Hand, Field, Deck, Discard areas
 - ⬜ **Add player info display** - Health, resources, turn indicator

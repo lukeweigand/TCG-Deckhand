@@ -61,6 +61,19 @@ pytest
 
 You should see output indicating all tests passed. ✅
 
+### Run the Game
+
+Launch the TCG Deckhand application:
+
+```powershell
+py main.py
+```
+
+This will open the game window with the main menu. From there you can:
+- **New Game**: Select AI difficulty and start playing
+- **Deck Builder**: Create and manage decks (coming soon)
+- **Settings**: Configure game options (coming soon)
+
 ### Initialize the Database
 
 Create the SQLite database for storing cards and game data:
