@@ -32,6 +32,9 @@ class GameScreen(ttk.Frame):
         # Game state (will be initialized)
         self.game = None
         
+        # DON attachment mode flag
+        self.don_attachment_mode = False
+        
         # Create UI elements
         self.create_widgets()
         
@@ -523,13 +526,31 @@ class GameScreen(ttk.Frame):
         
         # Update leaders
         if player.leader:
-            self.player_leader_label.config(
-                text=f"{player.leader.name}\n{player.leader.power}\n{'💤' if player.leader_state.value == 'rested' else '⚡'}"
-            )
+            attached_don = player.attached_don.get("leader", 0)
+            leader_text = f"{player.leader.name}\n{player.leader.power}"
+            if attached_don > 0:
+                leader_text += f"\n⚡×{attached_don}"
+            leader_text += f"\n{'💤' if player.leader_state.value == 'rested' else '⚡'}"
+            
+            self.player_leader_label.config(text=leader_text)
+            
+            # Make leader clickable in DON attachment mode
+            if self.don_attachment_mode:
+                self.player_leader_zone.config(bg='#5a5a2a', cursor='hand2')  # Yellowish
+                # Bind click event
+                self.player_leader_label.bind('<Button-1>', lambda e: self.execute_don_attachment("leader", is_leader=True))
+            else:
+                self.player_leader_zone.config(bg='#4a4a6a', cursor='')
+                self.player_leader_label.unbind('<Button-1>')
+                
         if opponent.leader:
-            self.opp_leader_label.config(
-                text=f"{opponent.leader.name}\n{opponent.leader.power}\n{'💤' if opponent.leader_state.value == 'rested' else '⚡'}"
-            )
+            attached_don = opponent.attached_don.get("leader", 0)
+            leader_text = f"{opponent.leader.name}\n{opponent.leader.power}"
+            if attached_don > 0:
+                leader_text += f"\n⚡×{attached_don}"
+            leader_text += f"\n{'💤' if opponent.leader_state.value == 'rested' else '⚡'}"
+            
+            self.opp_leader_label.config(text=leader_text)
         
         # Update field cards
         self.update_field_display()
@@ -558,25 +579,54 @@ class GameScreen(ttk.Frame):
         # Player field
         player = self.game.state.player1
         for char in player.characters:
-            card_label = tk.Label(
-                self.player_field_cards,
-                text=f"{char.name}\n{char.power}",
-                font=('Arial', 8),
-                fg='#ffffff',
-                bg='#4a4a4a',
-                relief='raised',
-                bd=2,
-                width=10,
-                height=3
-            )
-            card_label.pack(side='left', padx=2)
+            # Show attached DON count
+            attached_don = player.attached_don.get(char.id, 0)
+            card_text = f"{char.name}\n{char.power}"
+            if attached_don > 0:
+                card_text += f"\n⚡×{attached_don}"
+            
+            # Make clickable if in DON attachment mode
+            if self.don_attachment_mode:
+                card_btn = tk.Button(
+                    self.player_field_cards,
+                    text=card_text,
+                    font=('Arial', 8),
+                    fg='#ffffff',
+                    bg='#5a5a2a',  # Yellowish to indicate selectable
+                    activebackground='#6a6a3a',
+                    relief='raised',
+                    bd=3,
+                    width=10,
+                    height=3,
+                    cursor='hand2',
+                    command=lambda c=char: self.execute_don_attachment(c.id, is_leader=False)
+                )
+                card_btn.pack(side='left', padx=2)
+            else:
+                card_label = tk.Label(
+                    self.player_field_cards,
+                    text=card_text,
+                    font=('Arial', 8),
+                    fg='#ffffff',
+                    bg='#4a4a4a',
+                    relief='raised',
+                    bd=2,
+                    width=10,
+                    height=3
+                )
+                card_label.pack(side='left', padx=2)
         
         # Opponent field
         opponent = self.game.state.player2
         for char in opponent.characters:
+            attached_don = opponent.attached_don.get(char.id, 0)
+            card_text = f"{char.name}\n{char.power}"
+            if attached_don > 0:
+                card_text += f"\n⚡×{attached_don}"
+            
             card_label = tk.Label(
                 self.opponent_field_cards,
-                text=f"{char.name}\n{char.power}",
+                text=card_text,
                 font=('Arial', 8),
                 fg='#ffffff',
                 bg='#4a4a4a',
@@ -705,9 +755,77 @@ class GameScreen(ttk.Frame):
     
     def attach_don_to_card(self):
         """Allow player to attach DON to a character or leader."""
-        # TODO: For now, just show a message. Will implement full selection in next iteration.
-        self.status_label.config(text="DON attachment coming soon! (Phase 5.4)")
-        # Future: Open a dialog to select which card to attach DON to
+        # Check if we have active DON
+        if self.game.state.player1.active_don <= 0:
+            self.status_label.config(text="No active DON available to attach!")
+            return
+        
+        # Toggle DON attachment mode
+        if self.don_attachment_mode:
+            # Cancel attachment mode
+            self.don_attachment_mode = False
+            self.status_label.config(text="DON attachment cancelled")
+        else:
+            # Enter DON attachment selection mode
+            self.don_attachment_mode = True
+            self.status_label.config(text="📌 Click a character or leader to attach DON (+1000 power)")
+        
+        # Update display to show clickable cards
+        self.update_display()
+    
+    def execute_don_attachment(self, target_id, is_leader=False):
+        """Execute DON attachment to selected card.
+        
+        Args:
+            target_id: Card ID or "leader" for leader card
+            is_leader: True if attaching to leader
+        """
+        try:
+            from src.engine.actions import AttachDonAction, ActionType
+            
+            # Get the active player (whoever's turn it is)
+            active_player = self.game.state.get_active_player()
+            
+            print(f"\n=== DON ATTACHMENT DEBUG ===")
+            print(f"Target ID: {target_id}")
+            print(f"Is Leader: {is_leader}")
+            print(f"Current Phase: {self.game.state.current_phase}")
+            print(f"Active Player ID: {self.game.state.active_player_id}")
+            print(f"Player1 ID: {self.game.state.player1.player_id}")
+            print(f"Active DON: {active_player.active_don}")
+            
+            # Create attach DON action for the ACTIVE player
+            action = AttachDonAction(
+                player_id=active_player.player_id,  # Use active player, not always player1!
+                action_type=ActionType.ATTACH_DON,
+                target_id=target_id,
+                don_count=1
+            )
+            
+            print(f"Action created: {action}")
+            
+            # Execute action
+            success = self.game.execute_action(action)
+            
+            print(f"Execution success: {success}")
+            print(f"=== END DEBUG ===\n")
+            
+            if success:
+                target_name = "Leader" if is_leader else target_id[:8]
+                self.status_label.config(text=f"✅ Attached 1 DON to {target_name}!")
+                self.don_attachment_mode = False
+                self.update_display()
+            else:
+                self.status_label.config(text=f"❌ Cannot attach DON - check console for details")
+                
+        except Exception as e:
+            self.status_label.config(text=f"Error attaching DON: {str(e)}")
+            print(f"\n=== ERROR ===")
+            import traceback
+            traceback.print_exc()
+            print(f"=== END ERROR ===\n")
+            self.don_attachment_mode = False
+            self.update_display()
     
     def update_win_bar(self, win_percent):
         """Update the win advantage bar.

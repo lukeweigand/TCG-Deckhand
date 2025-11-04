@@ -158,9 +158,9 @@ def _validate_attach_don(game: GameState, action: AttachDonAction) -> tuple[bool
     """Validate attaching DON!! to a card."""
     player = game.get_active_player()
     
-    # Must be in DON phase
-    if game.current_phase != Phase.DON:
-        return (False, "Can only attach DON!! during DON phase")
+    # Can attach DON!! during DON or MAIN phase
+    if game.current_phase not in [Phase.DON, Phase.MAIN]:
+        return (False, "Can only attach DON!! during DON or MAIN phase")
     
     # Must have enough active DON!!
     if action.don_count > player.active_don:
