@@ -696,28 +696,61 @@ class GameScreen(ttk.Frame):
     def start_turn_phases(self, is_player=True):
         """Execute the automatic turn phases (REFRESH, DRAW, DON) then enter MAIN.
         
-        Special rule: First player's first turn skips DRAW and DON phases.
+        One Piece TCG Turn Rules:
+        - Player 1's FIRST turn only: Add 1 DON, no draw (going first disadvantage)
+        - Player 2's first turn: Normal turn (REFRESH, DRAW, add 2 DON)
+        - All other turns: REFRESH (untap, all DON become active) → DRAW (1 card) → DON (add 2)
         """
         try:
-            from src.engine.game_state import Phase
+            from src.engine.game_state import Phase, CardState
             
             player = self.game.state.get_active_player()
             player_name = "Your" if is_player else "Opponent's"
             
-            # Check if this is the very first turn (turn 1, player 1)
-            is_first_turn = (self.game.state.current_turn == 1 and 
-                           player.player_id == self.game.state.player1.player_id)
+            # Check if this is THE VERY FIRST TURN (turn 1, player 1 only)
+            is_very_first_turn = (self.game.state.current_turn == 1 and 
+                                 player.player_id == self.game.state.player1.player_id)
             
-            # REFRESH PHASE - untap all, refresh DON
-            self.game.state.current_phase = Phase.REFRESH
-            self.status_label.config(text=f"{player_name} REFRESH phase...")
-            self.game.state.refresh_don(player)
-            self.update_display()
-            self.update()
-            self.after(500)  # Pause so user can see
-            
-            if not is_first_turn:
-                # DRAW PHASE - draw 1 card (skip on first player's first turn)
+            if is_very_first_turn:
+                # PLAYER 1 TURN 1 ONLY: Add 1 DON, no draw
+                self.game.state.current_phase = Phase.DON
+                self.status_label.config(text=f"{player_name} first turn - adding 1 DON (no draw)...")
+                
+                # Add 1 DON to pool
+                if len(player.don_deck) > 0:
+                    player.don_deck.pop()
+                    player.don_pool = 1
+                    player.active_don = 1
+                
+                self.update_display()
+                self.update()
+                self.after(800)
+                
+            else:
+                # ALL OTHER TURNS (including Player 2's first turn): REFRESH → DRAW → DON
+                
+                # REFRESH PHASE - untap all cards, all DON become active
+                self.game.state.current_phase = Phase.REFRESH
+                self.status_label.config(text=f"{player_name} REFRESH phase...")
+                
+                # Untap all characters and leader
+                player.leader_state = CardState.ACTIVE
+                for char_id in player.character_states:
+                    player.character_states[char_id] = CardState.ACTIVE
+                
+                # Detach DON from cards and make ALL DON active
+                player.attached_don.clear()
+                player.active_don = player.don_pool  # ALL DON refresh to active!
+                
+                # Clear summoning sickness
+                player.played_this_turn.clear()
+                player.first_turn = False
+                
+                self.update_display()
+                self.update()
+                self.after(500)
+                
+                # DRAW PHASE - draw 1 card
                 self.game.state.current_phase = Phase.DRAW
                 self.status_label.config(text=f"{player_name} DRAW phase...")
                 if len(player.deck) > 0:
@@ -727,17 +760,39 @@ class GameScreen(ttk.Frame):
                 self.update()
                 self.after(500)
                 
-                # DON PHASE - add 2 DON to pool (skip on first player's first turn)
+                # DON PHASE - add 2 DON to pool (max 10 total)
                 self.game.state.current_phase = Phase.DON
-                self.status_label.config(text=f"{player_name} DON phase...")
-                # DON is already added in refresh_don, just show the phase
+                self.status_label.config(text=f"{player_name} DON phase - adding 2 DON...")
+                
+                don_to_add = min(2, len(player.don_deck))  # Can't add more than we have
+                don_to_add = min(don_to_add, 10 - player.don_pool)  # Can't exceed 10 total
+                
+                for _ in range(don_to_add):
+                    if player.don_deck:
+                        player.don_deck.pop()
+                        player.don_pool += 1
+                        player.active_don += 1
+                
                 self.update_display()
                 self.update()
                 self.after(500)
+            
+            # MAIN PHASE - player can act
+            self.game.state.current_phase = Phase.MAIN
+            
+            if is_player:
+                self.status_label.config(text="Your turn - MAIN phase")
+                self.update_display()
             else:
-                # First player's first turn - skip directly to MAIN
-                self.status_label.config(text="First turn - no draw or DON!")
-                self.update()
+                # AI's turn
+                self.status_label.config(text="Opponent's MAIN phase...")
+                self.update_display()
+                self.after(500, self.process_ai_turn)
+                
+        except Exception as e:
+            self.status_label.config(text=f"Error in turn phases: {str(e)}")
+            import traceback
+            traceback.print_exc()
                 self.after(800)
             
             # MAIN PHASE - player can act
