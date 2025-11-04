@@ -274,6 +274,11 @@ class GameScreen(ttk.Frame):
         self.player_hand_cards = tk.Frame(player_center, bg='#2a2a2a', height=90)
         self.player_hand_cards.pack(fill='x', pady=2)
         
+        # DON Pool (Interactive)
+        tk.Label(player_center, text="DON POOL (Click to attach)", font=('Arial', 8), fg='#ffd700', bg='#1e1e1e').pack(pady=2)
+        self.player_don_pool_frame = tk.Frame(player_center, bg='#2a2a2a', height=50)
+        self.player_don_pool_frame.pack(fill='x', pady=2)
+        
         # === ACTION PANEL (Right Side) ===
         # Title
         action_title = tk.Label(
@@ -529,6 +534,7 @@ class GameScreen(ttk.Frame):
         # Update field cards
         self.update_field_display()
         self.update_hand_display()
+        self.update_don_pool_display()
         
         # Update win bar
         self.update_win_bar(50.0)
@@ -640,6 +646,68 @@ class GameScreen(ttk.Frame):
             self.status_label.config(text=f"Error playing card: {str(e)}")
             import traceback
             traceback.print_exc()
+    
+    def update_don_pool_display(self):
+        """Update the DON pool display with clickable DON cards."""
+        # Clear existing DON cards
+        for widget in self.player_don_pool_frame.winfo_children():
+            widget.destroy()
+        
+        player = self.game.state.player1
+        
+        # Show active DON (clickable)
+        for i in range(player.active_don):
+            don_btn = tk.Button(
+                self.player_don_pool_frame,
+                text="⚡",
+                font=('Arial', 16, 'bold'),
+                fg='#ffd700',
+                bg='#2a4a2a',
+                activebackground='#3a5a3a',
+                relief='raised',
+                bd=2,
+                width=3,
+                height=1,
+                cursor='hand2',
+                command=lambda: self.attach_don_to_card()
+            )
+            don_btn.pack(side='left', padx=2, pady=5)
+            
+            # Hover effect
+            don_btn.bind('<Enter>', lambda e, b=don_btn: b.configure(bg='#3a5a3a'))
+            don_btn.bind('<Leave>', lambda e, b=don_btn: b.configure(bg='#2a4a2a'))
+        
+        # Show rested DON (grayed out, not clickable)
+        rested_don = player.don_pool - player.active_don
+        for i in range(rested_don):
+            don_label = tk.Label(
+                self.player_don_pool_frame,
+                text="⚡",
+                font=('Arial', 16, 'bold'),
+                fg='#666666',
+                bg='#3a2a2a',
+                relief='sunken',
+                bd=2,
+                width=3,
+                height=1
+            )
+            don_label.pack(side='left', padx=2, pady=5)
+        
+        # Show total count
+        count_label = tk.Label(
+            self.player_don_pool_frame,
+            text=f" {player.active_don}/{player.don_pool}",
+            font=('Arial', 10, 'bold'),
+            fg='#ffd700',
+            bg='#2a2a2a'
+        )
+        count_label.pack(side='left', padx=10)
+    
+    def attach_don_to_card(self):
+        """Allow player to attach DON to a character or leader."""
+        # TODO: For now, just show a message. Will implement full selection in next iteration.
+        self.status_label.config(text="DON attachment coming soon! (Phase 5.4)")
+        # Future: Open a dialog to select which card to attach DON to
     
     def update_win_bar(self, win_percent):
         """Update the win advantage bar.
