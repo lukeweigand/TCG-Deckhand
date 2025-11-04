@@ -526,8 +526,14 @@ class GameScreen(ttk.Frame):
         
         # Update leaders
         if player.leader:
+            # Calculate total power (base + DON bonuses only during player's turn)
+            is_player_turn = self.game.state.active_player_id == player.player_id
             attached_don = player.attached_don.get("leader", 0)
-            leader_text = f"{player.leader.name}\n{player.leader.power}"
+            total_power = player.leader.power
+            if is_player_turn and attached_don > 0:
+                total_power += (attached_don * 1000)
+            
+            leader_text = f"{player.leader.name}\n{total_power}"
             if attached_don > 0:
                 leader_text += f"\n⚡×{attached_don}"
             leader_text += f"\n{'💤' if player.leader_state.value == 'rested' else '⚡'}"
@@ -544,8 +550,14 @@ class GameScreen(ttk.Frame):
                 self.player_leader_label.unbind('<Button-1>')
                 
         if opponent.leader:
+            # Calculate total power (base + DON bonuses only during opponent's turn)
+            is_opponent_turn = self.game.state.active_player_id == opponent.player_id
             attached_don = opponent.attached_don.get("leader", 0)
-            leader_text = f"{opponent.leader.name}\n{opponent.leader.power}"
+            total_power = opponent.leader.power
+            if is_opponent_turn and attached_don > 0:
+                total_power += (attached_don * 1000)
+            
+            leader_text = f"{opponent.leader.name}\n{total_power}"
             if attached_don > 0:
                 leader_text += f"\n⚡×{attached_don}"
             leader_text += f"\n{'💤' if opponent.leader_state.value == 'rested' else '⚡'}"
@@ -578,10 +590,16 @@ class GameScreen(ttk.Frame):
         
         # Player field
         player = self.game.state.player1
+        is_player_turn = self.game.state.active_player_id == player.player_id
+        
         for char in player.characters:
-            # Show attached DON count
+            # Calculate total power (base + DON bonuses only during player's turn)
             attached_don = player.attached_don.get(char.id, 0)
-            card_text = f"{char.name}\n{char.power}"
+            total_power = char.power
+            if is_player_turn and attached_don > 0:
+                total_power += (attached_don * 1000)
+            
+            card_text = f"{char.name}\n{total_power}"
             if attached_don > 0:
                 card_text += f"\n⚡×{attached_don}"
             
@@ -618,9 +636,16 @@ class GameScreen(ttk.Frame):
         
         # Opponent field
         opponent = self.game.state.player2
+        is_opponent_turn = self.game.state.active_player_id == opponent.player_id
+        
         for char in opponent.characters:
+            # Calculate total power (base + DON bonuses only during opponent's turn)
             attached_don = opponent.attached_don.get(char.id, 0)
-            card_text = f"{char.name}\n{char.power}"
+            total_power = char.power
+            if is_opponent_turn and attached_don > 0:
+                total_power += (attached_don * 1000)
+            
+            card_text = f"{char.name}\n{total_power}"
             if attached_don > 0:
                 card_text += f"\n⚡×{attached_don}"
             
