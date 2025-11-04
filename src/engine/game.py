@@ -175,18 +175,23 @@ class Game:
         """
         Check if the game has ended.
         
+        One Piece TCG Win Conditions:
+        - Leader defeated: A player takes damage WHILE at 0 life cards
+          (depleting all life cards doesn't end the game - you must be hit again)
+        - Deck-out: A player cannot draw when required
+        
         Returns:
             GameResult if game is over, None if game continues
         """
         if self.state is None:
             return None
         
-        # Check if either player has 0 life_cards
-        if len(self.state.player1.life_cards) <= 0 and len(self.state.player2.life_cards) <= 0:
+        # Check if either leader is defeated (took damage at 0 life)
+        if self.state.player1.defeated and self.state.player2.defeated:
             return GameResult.DRAW
-        elif len(self.state.player1.life_cards) <= 0:
+        elif self.state.player1.defeated:
             return GameResult.PLAYER_2_WIN
-        elif len(self.state.player2.life_cards) <= 0:
+        elif self.state.player2.defeated:
             return GameResult.PLAYER_1_WIN
         
         # Check if either player has no cards in deck (deck-out loss)

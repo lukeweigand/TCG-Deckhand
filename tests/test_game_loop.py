@@ -183,8 +183,9 @@ class TestWinConditions:
         )
         game.state = initialized_game_state
         
-        # Set player 2 life to 0
+        # Set player 2 defeated (took damage at 0 life)
         game.state.player2.life_cards = []
+        game.state.player2.defeated = True
         
         result = game._check_win_condition()
         assert result == GameResult.PLAYER_1_WIN
@@ -199,8 +200,9 @@ class TestWinConditions:
         )
         game.state = initialized_game_state
         
-        # Set player 1 life to 0
+        # Set player 1 defeated (took damage at 0 life)
         game.state.player1.life_cards = []
+        game.state.player1.defeated = True
         
         result = game._check_win_condition()
         assert result == GameResult.PLAYER_2_WIN
@@ -215,9 +217,11 @@ class TestWinConditions:
         )
         game.state = initialized_game_state
         
-        # Both players at 0 life
+        # Both players defeated simultaneously (both took damage at 0 life)
         game.state.player1.life_cards = []
+        game.state.player1.defeated = True
         game.state.player2.life_cards = []
+        game.state.player2.defeated = True
         
         result = game._check_win_condition()
         assert result == GameResult.DRAW
