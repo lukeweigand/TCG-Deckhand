@@ -90,39 +90,51 @@ class DifficultySelect(ttk.Frame):
             col = idx % 2
             self.create_difficulty_card(cards_frame, diff, row, col)
         
-        # Buttons
-        button_frame = ttk.Frame(main_frame)
-        button_frame.pack(pady=20)
+        # Buttons - make them more visible
+        button_frame = tk.Frame(main_frame, bg='#2b2b2b')
+        button_frame.pack(pady=30)
         
         back_btn = tk.Button(
             button_frame,
-            text="← Back",
+            text="← Back to Menu",
             command=self.go_back,
-            width=15,
+            width=18,
             height=2,
             font=('Arial', 12),
             bg='#3a3a3a',
             fg='#ffffff',
             activebackground='#4a4a4a',
-            border=0,
+            activeforeground='#ffffff',
+            relief='raised',
+            bd=2,
             cursor='hand2'
         )
-        back_btn.pack(side='left', padx=10)
+        back_btn.pack(side='left', padx=15)
+        
+        # Add hover effect for back button
+        back_btn.bind('<Enter>', lambda e: back_btn.configure(bg='#4a4a4a'))
+        back_btn.bind('<Leave>', lambda e: back_btn.configure(bg='#3a3a3a'))
         
         start_btn = tk.Button(
             button_frame,
             text="Start Game →",
             command=self.start_game,
-            width=15,
+            width=18,
             height=2,
             font=('Arial', 12, 'bold'),
             bg='#4a9eff',
             fg='#ffffff',
             activebackground='#3a7acc',
-            border=0,
+            activeforeground='#ffffff',
+            relief='raised',
+            bd=2,
             cursor='hand2'
         )
-        start_btn.pack(side='left', padx=10)
+        start_btn.pack(side='left', padx=15)
+        
+        # Add hover effect for start button
+        start_btn.bind('<Enter>', lambda e: start_btn.configure(bg='#3a7acc'))
+        start_btn.bind('<Leave>', lambda e: start_btn.configure(bg='#4a9eff'))
     
     def create_difficulty_card(self, parent, diff, row, col):
         """Create a difficulty selection card.

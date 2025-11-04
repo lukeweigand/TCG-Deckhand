@@ -100,13 +100,9 @@ class MainMenu(ttk.Frame):
         self.app.show_screen('deck_builder')
     
     def settings(self):
-        """Open settings (not implemented yet)."""
-        print("Settings clicked - Not implemented yet")
-        # TODO: Implement settings screen in Phase 5.6
-        tk.messagebox.showinfo(
-            "Coming Soon",
-            "Settings will be available in a future update."
-        )
+        """Open settings."""
+        print("Settings clicked")
+        self.app.show_screen('settings')
     
     def exit_game(self):
         """Exit the application."""
