@@ -320,7 +320,7 @@ class GameScreen(ttk.Frame):
         strat_frame = tk.Frame(action_panel, bg='#1e1e1e')
         strat_frame.pack(fill='x', padx=10, pady=10)
         
-        suggest_btn = tk.Button(
+        self.best_move_btn = tk.Button(
             strat_frame,
             text="💡 Best Move",
             command=self.suggest_move,
@@ -333,9 +333,9 @@ class GameScreen(ttk.Frame):
             padx=10,
             pady=8
         )
-        suggest_btn.pack(fill='x', pady=5)
+        self.best_move_btn.pack(fill='x', pady=5)
         
-        insights_btn = tk.Button(
+        self.insights_btn = tk.Button(
             strat_frame,
             text="🎯 Insights",
             command=self.show_insights,
@@ -348,7 +348,7 @@ class GameScreen(ttk.Frame):
             padx=10,
             pady=8
         )
-        insights_btn.pack(fill='x', pady=5)
+        self.insights_btn.pack(fill='x', pady=5)
         
         # Game controls
         control_frame = tk.Frame(action_panel, bg='#1e1e1e')
@@ -362,34 +362,18 @@ class GameScreen(ttk.Frame):
             bg='#1e1e1e'
         ).pack(pady=5)
         
-        self.pass_phase_btn = tk.Button(
-            control_frame,
-            text="Pass Phase",
-            command=self.pass_phase,
-            font=('Arial', 9),
-            bg='#4a4a4a',
-            fg='#ffffff',
-            relief='raised',
-            bd=2,
-            cursor='hand2',
-            padx=10,
-            pady=6,
-            state='disabled'
-        )
-        self.pass_phase_btn.pack(fill='x', pady=3)
-        
         self.end_turn_btn = tk.Button(
             control_frame,
             text="End Turn",
             command=self.end_turn,
-            font=('Arial', 9),
+            font=('Arial', 11, 'bold'),
             bg='#ff6b6b',
             fg='#ffffff',
             relief='raised',
-            bd=2,
+            bd=3,
             cursor='hand2',
-            padx=10,
-            pady=6,
+            padx=15,
+            pady=12,
             state='disabled'
         )
         self.end_turn_btn.pack(fill='x', pady=3)
@@ -452,11 +436,12 @@ class GameScreen(ttk.Frame):
             if self.difficulty == 'easy':
                 ai = RandomAI("2")
             elif self.difficulty == 'medium':
-                ai = MCTSAI("2", time_limit=1.0)
+                from src.ai.mcts_ai import MCTSDifficulty
+                ai = MCTSAI(difficulty=MCTSDifficulty.MEDIUM)
             elif self.difficulty == 'hard':
-                ai = MinimaxAI("2", depth=1)
+                ai = MinimaxAI("2", max_depth=1)
             else:  # expert
-                ai = MinimaxAI("2", depth=2)
+                ai = MinimaxAI("2", max_depth=2)
             
             # Create game
             config = GameConfig(
@@ -480,14 +465,27 @@ class GameScreen(ttk.Frame):
                 starting_player=1
             )
             
-            # Update UI
+            # Start the first turn with automatic phases
+            self.status_label.config(text="Game started!")
             self.update_display()
-            self.status_label.config(text="Game started! Your turn.")
+            self.after(500, lambda: self.start_turn_phases(is_player=True))
             
         except Exception as e:
-            self.status_label.config(text=f"Error initializing game: {str(e)}")
+            error_msg = f"Error initializing game: {str(e)}"
+            self.status_label.config(text=error_msg)
+            print("\n" + "="*60)
+            print("GAME INITIALIZATION ERROR")
+            print("="*60)
+            print(f"Difficulty: {self.difficulty}")
+            print(f"Error: {str(e)}")
             import traceback
             traceback.print_exc()
+            print("="*60 + "\n")
+            
+            # Show error in a popup too
+            import tkinter.messagebox as messagebox
+            messagebox.showerror("Game Initialization Error", 
+                               f"Failed to start game with {self.difficulty} difficulty:\n\n{str(e)}\n\nCheck console for details.")
             print(f"Game initialization error: {e}")
     
     def update_display(self):
@@ -534,6 +532,14 @@ class GameScreen(ttk.Frame):
         
         # Update win bar
         self.update_win_bar(50.0)
+        
+        # Enable/disable buttons based on whose turn it is
+        is_player_turn = state.active_player_id == state.player1.player_id
+        button_state = tk.NORMAL if is_player_turn else tk.DISABLED
+        
+        self.end_turn_btn.config(state=button_state)
+        self.best_move_btn.config(state=button_state)
+        self.insights_btn.config(state=button_state)
     
     def update_field_display(self):
         """Update the field card displays."""
@@ -581,9 +587,9 @@ class GameScreen(ttk.Frame):
         for widget in self.player_hand_cards.winfo_children():
             widget.destroy()
         
-        # Player hand
+        # Player hand with clickable cards
         player = self.game.state.player1
-        for card in player.hand:
+        for idx, card in enumerate(player.hand):
             card_btn = tk.Button(
                 self.player_hand_cards,
                 text=f"{card.name}\nCost: {card.cost}\nPower: {card.power}",
@@ -595,9 +601,45 @@ class GameScreen(ttk.Frame):
                 bd=2,
                 width=12,
                 height=4,
-                cursor='hand2'
+                cursor='hand2',
+                command=lambda c=card: self.play_card(c)
             )
             card_btn.pack(side='left', padx=2)
+            
+            # Hover effect
+            card_btn.bind('<Enter>', lambda e, b=card_btn: b.configure(bg='#4a7a9a'))
+            card_btn.bind('<Leave>', lambda e, b=card_btn: b.configure(bg='#3a6a8a'))
+    
+    def play_card(self, card):
+        """Attempt to play a card from hand.
+        
+        Args:
+            card: The card to play
+        """
+        try:
+            from src.engine.actions import PlayCardAction, ActionType
+            
+            # Create play card action (rest DON equal to card cost)
+            action = PlayCardAction(
+                player_id=self.game.state.player1.player_id,
+                action_type=ActionType.PLAY_CARD,
+                card=card,
+                don_to_rest=card.cost  # Must pay full cost
+            )
+            
+            # Use the game's execute_action method (which validates internally)
+            success = self.game.execute_action(action)
+            
+            if success:
+                self.status_label.config(text=f"Played {card.name}!")
+                self.update_display()
+            else:
+                self.status_label.config(text=f"Cannot play {card.name} - not enough DON or invalid")
+        
+        except Exception as e:
+            self.status_label.config(text=f"Error playing card: {str(e)}")
+            import traceback
+            traceback.print_exc()
     
     def update_win_bar(self, win_percent):
         """Update the win advantage bar.
@@ -625,15 +667,151 @@ class GameScreen(ttk.Frame):
         # Update percentage label
         self.win_percent_label.config(text=f"{win_percent:.1f}%")
     
-    def pass_phase(self):
-        """Pass to the next phase."""
-        self.status_label.config(text="Phase passed.")
-        # TODO: Implement phase passing logic
-    
     def end_turn(self):
-        """End the current turn."""
-        self.status_label.config(text="Turn ended.")
-        # TODO: Implement turn ending logic
+        """End the current turn and pass to AI."""
+        try:
+            from src.engine.game_state import Phase
+            
+            # Check if it's player's turn
+            if self.game.state.active_player_id != self.game.state.player1.player_id:
+                self.status_label.config(text="Not your turn!")
+                return
+            
+            self.status_label.config(text="Ending turn...")
+            self.update()
+            
+            # Switch to opponent and increment turn
+            self.game.state.switch_active_player()
+            self.game.state.current_turn += 1
+            
+            # Start opponent's turn with automatic phases
+            self.status_label.config(text="Opponent's turn - REFRESH phase")
+            self.start_turn_phases(is_player=False)
+            
+        except Exception as e:
+            self.status_label.config(text=f"Error ending turn: {str(e)}")
+            import traceback
+            traceback.print_exc()
+    
+    def start_turn_phases(self, is_player=True):
+        """Execute the automatic turn phases (REFRESH, DRAW, DON) then enter MAIN.
+        
+        Special rule: First player's first turn skips DRAW and DON phases.
+        """
+        try:
+            from src.engine.game_state import Phase
+            
+            player = self.game.state.get_active_player()
+            player_name = "Your" if is_player else "Opponent's"
+            
+            # Check if this is the very first turn (turn 1, player 1)
+            is_first_turn = (self.game.state.current_turn == 1 and 
+                           player.player_id == self.game.state.player1.player_id)
+            
+            # REFRESH PHASE - untap all, refresh DON
+            self.game.state.current_phase = Phase.REFRESH
+            self.status_label.config(text=f"{player_name} REFRESH phase...")
+            self.game.state.refresh_don(player)
+            self.update_display()
+            self.update()
+            self.after(500)  # Pause so user can see
+            
+            if not is_first_turn:
+                # DRAW PHASE - draw 1 card (skip on first player's first turn)
+                self.game.state.current_phase = Phase.DRAW
+                self.status_label.config(text=f"{player_name} DRAW phase...")
+                if len(player.deck) > 0:
+                    card = player.deck.pop(0)
+                    player.hand.append(card)
+                self.update_display()
+                self.update()
+                self.after(500)
+                
+                # DON PHASE - add 2 DON to pool (skip on first player's first turn)
+                self.game.state.current_phase = Phase.DON
+                self.status_label.config(text=f"{player_name} DON phase...")
+                # DON is already added in refresh_don, just show the phase
+                self.update_display()
+                self.update()
+                self.after(500)
+            else:
+                # First player's first turn - skip directly to MAIN
+                self.status_label.config(text="First turn - no draw or DON!")
+                self.update()
+                self.after(800)
+            
+            # MAIN PHASE - player can act
+            self.game.state.current_phase = Phase.MAIN
+            
+            if is_player:
+                self.status_label.config(text="Your turn - MAIN phase")
+                self.update_display()
+            else:
+                # AI's turn
+                self.status_label.config(text="Opponent's MAIN phase...")
+                self.update_display()
+                self.after(500, self.process_ai_turn)
+                
+        except Exception as e:
+            self.status_label.config(text=f"Error in turn phases: {str(e)}")
+            import traceback
+            traceback.print_exc()
+    
+    def process_ai_turn(self):
+        """Let the AI take its turn in MAIN phase."""
+        try:
+            from src.engine.game_state import Phase
+            
+            self.status_label.config(text="AI is thinking...")
+            self.update()
+            
+            # AI should be in MAIN phase, let it make actions
+            ai_player = self.game.player2
+            max_actions = 50  # Safety limit
+            action_count = 0
+            
+            # Keep getting AI actions until it returns None (passes)
+            while action_count < max_actions:
+                action = ai_player.get_action(self.game.state)
+                
+                if action is None:
+                    # AI passes MAIN phase
+                    break
+                
+                # Execute AI action
+                success = self.game.execute_action(action)
+                if success:
+                    self.status_label.config(text=f"AI: {action.action_type.value}")
+                    self.update_display()
+                    self.update()
+                    self.after(300)  # Delay so user can see
+                
+                action_count += 1
+            
+            # AI finished MAIN phase, end its turn and return to player
+            self.status_label.config(text="AI ending turn...")
+            self.update()
+            self.after(500)
+            
+            # Switch back to player
+            self.game.state.switch_active_player()
+            self.game.state.current_turn += 1
+            
+            # Start player's turn with automatic phases
+            self.start_turn_phases(is_player=True)
+            
+        except Exception as e:
+            self.status_label.config(text=f"Error during AI turn: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            
+            self.update_display()
+            self.status_label.config(text="Your turn!")
+            
+        except Exception as e:
+            self.status_label.config(text=f"Error during AI turn: {str(e)}")
+            import traceback
+            traceback.print_exc()
     
     def suggest_move(self):
         """Show best move suggestion."""
