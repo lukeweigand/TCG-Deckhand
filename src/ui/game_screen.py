@@ -793,24 +793,6 @@ class GameScreen(ttk.Frame):
             self.status_label.config(text=f"Error in turn phases: {str(e)}")
             import traceback
             traceback.print_exc()
-                self.after(800)
-            
-            # MAIN PHASE - player can act
-            self.game.state.current_phase = Phase.MAIN
-            
-            if is_player:
-                self.status_label.config(text="Your turn - MAIN phase")
-                self.update_display()
-            else:
-                # AI's turn
-                self.status_label.config(text="Opponent's MAIN phase...")
-                self.update_display()
-                self.after(500, self.process_ai_turn)
-                
-        except Exception as e:
-            self.status_label.config(text=f"Error in turn phases: {str(e)}")
-            import traceback
-            traceback.print_exc()
     
     def process_ai_turn(self):
         """Let the AI take its turn in MAIN phase."""
