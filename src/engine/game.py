@@ -336,6 +336,25 @@ class Game:
         # Add card to appropriate zone
         from src.models import Character, Event
         if isinstance(card, Character):
+            # If field is full, replace the weakest character
+            if current_player.is_field_full():
+                # Find weakest character (lowest power, considering attached DON)
+                weakest = min(current_player.characters, 
+                            key=lambda c: c.power + (current_player.attached_don.get(c.id, 0) * 1000))
+                
+                # Remove weakest character
+                current_player.characters.remove(weakest)
+                current_player.trash.append(weakest)
+                
+                # Clean up state
+                if weakest.id in current_player.character_states:
+                    del current_player.character_states[weakest.id]
+                if weakest.id in current_player.attached_don:
+                    # Return DON to pool
+                    don_count = current_player.attached_don[weakest.id]
+                    current_player.don_pool += don_count
+                    del current_player.attached_don[weakest.id]
+            
             # Add to field
             current_player.characters.append(card)
             

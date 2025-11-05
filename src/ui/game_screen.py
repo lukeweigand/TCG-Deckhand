@@ -7,7 +7,9 @@ import tkinter as tk
 from tkinter import ttk
 from src.engine.game import Game, GameConfig
 from src.engine.game_init import initialize_game
+from src.engine.game_state import CardState
 from src.models import Leader, Character, Deck
+from src.ui.human_player import HumanPlayer
 from src.ai.random_ai import RandomAI
 from src.ai.mcts_ai import MCTSAI
 from src.ai.minimax_ai import MinimaxAI
@@ -34,6 +36,11 @@ class GameScreen(ttk.Frame):
         
         # DON attachment mode flag
         self.don_attachment_mode = False
+        
+        # Attack mode state
+        self.attack_mode = False  # True when selecting attack target
+        self.selected_attacker = None  # Card ID of selected attacker
+        self.is_leader_attacker = False  # True if leader is attacking
         
         # Create UI elements
         self.create_widgets()
@@ -370,6 +377,22 @@ class GameScreen(ttk.Frame):
             bg='#1e1e1e'
         ).pack(pady=5)
         
+        self.attack_btn = tk.Button(
+            control_frame,
+            text="⚔️ Attack",
+            command=self.toggle_attack_mode,
+            font=('Arial', 11, 'bold'),
+            bg='#4a7a4a',
+            fg='#ffffff',
+            relief='raised',
+            bd=3,
+            cursor='hand2',
+            padx=15,
+            pady=12,
+            state='disabled'
+        )
+        self.attack_btn.pack(fill='x', pady=3)
+        
         self.end_turn_btn = tk.Button(
             control_frame,
             text="End Turn",
@@ -459,7 +482,10 @@ class GameScreen(ttk.Frame):
                 player2_leader=leader
             )
             
-            self.game = Game(config, RandomAI("1"), ai)  # Player controlled manually
+            # Create human player for player1 with UI callback
+            human_player = HumanPlayer("1", ui_callback=self)
+            
+            self.game = Game(config, human_player, ai)
             
             # Initialize game state
             self.status_label.config(text="Setting up game board...")
@@ -528,6 +554,7 @@ class GameScreen(ttk.Frame):
         if player.leader:
             # Calculate total power (base + DON bonuses only during player's turn)
             is_player_turn = self.game.state.active_player_id == player.player_id
+            is_rested = player.leader_state.value == 'rested'
             attached_don = player.attached_don.get("leader", 0)
             total_power = player.leader.power
             if is_player_turn and attached_don > 0:
@@ -536,15 +563,19 @@ class GameScreen(ttk.Frame):
             leader_text = f"{player.leader.name}\n{total_power}"
             if attached_don > 0:
                 leader_text += f"\n⚡×{attached_don}"
-            leader_text += f"\n{'💤' if player.leader_state.value == 'rested' else '⚡'}"
+            leader_text += f"\n{'💤' if is_rested else '⚡'}"
             
             self.player_leader_label.config(text=leader_text)
             
-            # Make leader clickable in DON attachment mode
+            # Determine click behavior
             if self.don_attachment_mode:
-                self.player_leader_zone.config(bg='#5a5a2a', cursor='hand2')  # Yellowish
-                # Bind click event
+                # Yellow for DON attachment
+                self.player_leader_zone.config(bg='#5a5a2a', cursor='hand2')
                 self.player_leader_label.bind('<Button-1>', lambda e: self.execute_don_attachment("leader", is_leader=True))
+            elif self.attack_mode and self.selected_attacker is None and is_player_turn and not is_rested:
+                # Green for can attack
+                self.player_leader_zone.config(bg='#2a5a2a', cursor='hand2')
+                self.player_leader_label.bind('<Button-1>', lambda e: self.select_attacker("leader", is_leader=True))
             else:
                 self.player_leader_zone.config(bg='#4a4a6a', cursor='')
                 self.player_leader_label.unbind('<Button-1>')
@@ -563,6 +594,15 @@ class GameScreen(ttk.Frame):
             leader_text += f"\n{'💤' if opponent.leader_state.value == 'rested' else '⚡'}"
             
             self.opp_leader_label.config(text=leader_text)
+            
+            # Make opponent leader clickable as attack target
+            if self.attack_mode and self.selected_attacker is not None:
+                # Red for attackable target (leader is always attackable)
+                self.opp_leader_zone.config(bg='#5a2a2a', cursor='crosshair')
+                self.opp_leader_label.bind('<Button-1>', lambda e: self.execute_attack("leader"))
+            else:
+                self.opp_leader_zone.config(bg='#4a4a6a', cursor='')
+                self.opp_leader_label.unbind('<Button-1>')
         
         # Update field cards
         self.update_field_display()
@@ -576,6 +616,7 @@ class GameScreen(ttk.Frame):
         is_player_turn = state.active_player_id == state.player1.player_id
         button_state = tk.NORMAL if is_player_turn else tk.DISABLED
         
+        self.attack_btn.config(state=button_state)
         self.end_turn_btn.config(state=button_state)
         self.best_move_btn.config(state=button_state)
         self.insights_btn.config(state=button_state)
@@ -593,24 +634,46 @@ class GameScreen(ttk.Frame):
         is_player_turn = self.game.state.active_player_id == player.player_id
         
         for char in player.characters:
+            from src.engine.abilities import has_blocker, has_rush
+            
             # Calculate total power (base + DON bonuses only during player's turn)
             attached_don = player.attached_don.get(char.id, 0)
             total_power = char.power
             if is_player_turn and attached_don > 0:
                 total_power += (attached_don * 1000)
             
-            card_text = f"{char.name}\n{total_power}"
+            # Check if character is rested (get state from player.character_states)
+            char_state = player.character_states.get(char.id, CardState.ACTIVE)
+            is_rested = char_state.value == 'rested'
+            state_icon = '💤' if is_rested else '⚡'
+            
+            card_text = f"{char.name}\n{total_power} {state_icon}"
             if attached_don > 0:
                 card_text += f"\n⚡×{attached_don}"
             
-            # Make clickable if in DON attachment mode
-            if self.don_attachment_mode:
+            # Show abilities
+            abilities = []
+            if has_blocker(char):
+                abilities.append("🛡️")
+            if has_rush(char):
+                abilities.append("⚡Rush")
+            if abilities:
+                card_text += "\n" + " ".join(abilities)
+            
+            # Determine if card should be clickable and for what action
+            clickable_for_don = self.don_attachment_mode
+            clickable_for_attack = (self.attack_mode and self.selected_attacker is None and 
+                                   is_player_turn and not is_rested)
+            clickable_as_target = (self.attack_mode and self.selected_attacker is not None)
+            
+            if clickable_for_don:
+                # Yellow for DON attachment
                 card_btn = tk.Button(
                     self.player_field_cards,
                     text=card_text,
                     font=('Arial', 8),
                     fg='#ffffff',
-                    bg='#5a5a2a',  # Yellowish to indicate selectable
+                    bg='#5a5a2a',
                     activebackground='#6a6a3a',
                     relief='raised',
                     bd=3,
@@ -620,7 +683,39 @@ class GameScreen(ttk.Frame):
                     command=lambda c=char: self.execute_don_attachment(c.id, is_leader=False)
                 )
                 card_btn.pack(side='left', padx=2)
+            elif clickable_for_attack:
+                # Green for can attack
+                card_btn = tk.Button(
+                    self.player_field_cards,
+                    text=card_text,
+                    font=('Arial', 8),
+                    fg='#ffffff',
+                    bg='#2a5a2a',
+                    activebackground='#3a6a3a',
+                    relief='raised',
+                    bd=3,
+                    width=10,
+                    height=3,
+                    cursor='hand2',
+                    command=lambda c=char: self.select_attacker(c.id, is_leader=False)
+                )
+                card_btn.pack(side='left', padx=2)
+            elif clickable_as_target:
+                # Can't attack own characters (should not be clickable as target)
+                card_label = tk.Label(
+                    self.player_field_cards,
+                    text=card_text,
+                    font=('Arial', 8),
+                    fg='#ffffff',
+                    bg='#4a4a4a',
+                    relief='raised',
+                    bd=2,
+                    width=10,
+                    height=3
+                )
+                card_label.pack(side='left', padx=2)
             else:
+                # Normal display
                 card_label = tk.Label(
                     self.player_field_cards,
                     text=card_text,
@@ -639,28 +734,66 @@ class GameScreen(ttk.Frame):
         is_opponent_turn = self.game.state.active_player_id == opponent.player_id
         
         for char in opponent.characters:
+            from src.engine.abilities import has_blocker, has_rush
+            
             # Calculate total power (base + DON bonuses only during opponent's turn)
             attached_don = opponent.attached_don.get(char.id, 0)
             total_power = char.power
             if is_opponent_turn and attached_don > 0:
                 total_power += (attached_don * 1000)
             
-            card_text = f"{char.name}\n{total_power}"
+            # Check if character is rested (get state from opponent.character_states)
+            char_state = opponent.character_states.get(char.id, CardState.ACTIVE)
+            is_rested = char_state.value == 'rested'
+            state_icon = '💤' if is_rested else '⚡'
+            
+            card_text = f"{char.name}\n{total_power} {state_icon}"
             if attached_don > 0:
                 card_text += f"\n⚡×{attached_don}"
             
-            card_label = tk.Label(
-                self.opponent_field_cards,
-                text=card_text,
-                font=('Arial', 8),
-                fg='#ffffff',
-                bg='#4a4a4a',
-                relief='raised',
-                bd=2,
-                width=10,
-                height=3
-            )
-            card_label.pack(side='left', padx=2)
+            # Show abilities
+            abilities = []
+            if has_blocker(char):
+                abilities.append("🛡️")
+            if has_rush(char):
+                abilities.append("⚡Rush")
+            if abilities:
+                card_text += "\n" + " ".join(abilities)
+            
+            # Make clickable if in attack mode and selecting target
+            # Can only attack RESTED opponent characters
+            clickable_as_target = (self.attack_mode and self.selected_attacker is not None and is_rested)
+            
+            if clickable_as_target:
+                # Red for attackable target
+                card_btn = tk.Button(
+                    self.opponent_field_cards,
+                    text=card_text,
+                    font=('Arial', 8),
+                    fg='#ffffff',
+                    bg='#5a2a2a',
+                    activebackground='#6a3a3a',
+                    relief='raised',
+                    bd=3,
+                    width=10,
+                    height=3,
+                    cursor='crosshair',
+                    command=lambda c=char: self.execute_attack(c.id)
+                )
+                card_btn.pack(side='left', padx=2)
+            else:
+                card_label = tk.Label(
+                    self.opponent_field_cards,
+                    text=card_text,
+                    font=('Arial', 8),
+                    fg='#ffffff',
+                    bg='#4a4a4a',
+                    relief='raised',
+                    bd=2,
+                    width=10,
+                    height=3
+                )
+                card_label.pack(side='left', padx=2)
     
     def update_hand_display(self):
         """Update the hand card displays."""
@@ -671,9 +804,39 @@ class GameScreen(ttk.Frame):
         # Player hand with clickable cards
         player = self.game.state.player1
         for idx, card in enumerate(player.hand):
+            from src.models import Character, Event
+            from src.engine.abilities import has_blocker, has_rush
+            
+            # Build card text with abilities
+            card_text = f"{card.name}\nCost: {card.cost}"
+            
+            if isinstance(card, Character):
+                card_text += f"\nPower: {card.power}"
+                
+                # Show abilities
+                abilities = []
+                if has_blocker(card):
+                    abilities.append("🛡️Blocker")
+                if has_rush(card):
+                    abilities.append("⚡Rush")
+                if card.counter > 0:
+                    abilities.append(f"[Counter +{card.counter}]")
+                
+                if abilities:
+                    card_text += "\n" + " ".join(abilities)
+                    
+            elif isinstance(card, Event):
+                # Show counter value for events
+                if hasattr(card, 'counter') and card.counter > 0:
+                    card_text += f"\n[Counter +{card.counter}]"
+                # Show if it's main phase playable
+                if hasattr(card, 'effect_text'):
+                    if "[Main]" in card.effect_text:
+                        card_text += "\n[Main Phase]"
+            
             card_btn = tk.Button(
                 self.player_hand_cards,
-                text=f"{card.name}\nCost: {card.cost}\nPower: {card.power}",
+                text=card_text,
                 font=('Arial', 8),
                 fg='#ffffff',
                 bg='#3a6a8a',
@@ -681,7 +844,7 @@ class GameScreen(ttk.Frame):
                 relief='raised',
                 bd=2,
                 width=12,
-                height=4,
+                height=5,
                 cursor='hand2',
                 command=lambda c=card: self.play_card(c)
             )
@@ -699,10 +862,36 @@ class GameScreen(ttk.Frame):
         """
         try:
             from src.engine.actions import PlayCardAction, ActionType
+            from src.models import Character
+            import tkinter.messagebox as messagebox
+            
+            player = self.game.state.player1
+            
+            # Check if playing a character and field is full
+            if isinstance(card, Character) and player.is_field_full():
+                # Ask which character to replace
+                replace_id = self.select_character_to_replace()
+                if replace_id is None:
+                    self.status_label.config(text="Cancelled playing card")
+                    return
+                
+                # Remove the selected character first
+                char_to_remove = next((c for c in player.characters if c.id == replace_id), None)
+                if char_to_remove:
+                    player.characters.remove(char_to_remove)
+                    player.trash.append(char_to_remove)
+                    if replace_id in player.character_states:
+                        del player.character_states[replace_id]
+                    if replace_id in player.attached_don:
+                        # Return attached DON to pool
+                        don_count = player.attached_don[replace_id]
+                        player.don_pool += don_count
+                        del player.attached_don[replace_id]
+                    self.status_label.config(text=f"Replaced {char_to_remove.name}")
             
             # Create play card action (rest DON equal to card cost)
             action = PlayCardAction(
-                player_id=self.game.state.player1.player_id,
+                player_id=player.player_id,
                 action_type=ActionType.PLAY_CARD,
                 card=card,
                 don_to_rest=card.cost  # Must pay full cost
@@ -721,6 +910,298 @@ class GameScreen(ttk.Frame):
             self.status_label.config(text=f"Error playing card: {str(e)}")
             import traceback
             traceback.print_exc()
+    
+    def select_character_to_replace(self):
+        """Show dialog to select which character to replace when field is full.
+        
+        Returns:
+            Character ID to replace, or None if cancelled
+        """
+        player = self.game.state.player1
+        
+        # Create popup window
+        dialog = tk.Toplevel(self)
+        dialog.title("Select Character to Replace")
+        dialog.geometry("500x300")
+        dialog.configure(bg='#2b2b2b')
+        dialog.transient(self)
+        dialog.grab_set()
+        
+        selected_id = [None]  # Use list to allow modification in nested function
+        
+        tk.Label(
+            dialog,
+            text="Field is full! Select a character to replace:",
+            font=('Arial', 12, 'bold'),
+            fg='#ffffff',
+            bg='#2b2b2b'
+        ).pack(pady=10)
+        
+        # Character buttons
+        char_frame = tk.Frame(dialog, bg='#2b2b2b')
+        char_frame.pack(expand=True, fill='both', padx=20, pady=10)
+        
+        def select_char(char_id):
+            selected_id[0] = char_id
+            dialog.destroy()
+        
+        for char in player.characters:
+            attached_don = player.attached_don.get(char.id, 0)
+            char_text = f"{char.name}\nPower: {char.power}"
+            if attached_don > 0:
+                char_text += f"\n⚡×{attached_don}"
+            
+            btn = tk.Button(
+                char_frame,
+                text=char_text,
+                command=lambda c=char: select_char(c.id),
+                font=('Arial', 10),
+                bg='#4a4a4a',
+                fg='#ffffff',
+                relief='raised',
+                bd=3,
+                cursor='hand2',
+                width=15,
+                height=4
+            )
+            btn.pack(side='left', padx=5)
+        
+        # Cancel button
+        tk.Button(
+            dialog,
+            text="Cancel",
+            command=dialog.destroy,
+            font=('Arial', 10),
+            bg='#ff6b6b',
+            fg='#ffffff',
+            relief='raised',
+            bd=2,
+            cursor='hand2',
+            padx=15,
+            pady=5
+        ).pack(pady=10)
+        
+        # Wait for dialog to close
+        self.wait_window(dialog)
+        
+        return selected_id[0]
+    
+    def choose_blocker(self, game_state, battle):
+        """
+        Ask human player if they want to use a blocker.
+        
+        Called by HumanPlayer when AI attacks.
+        
+        Args:
+            game_state: Current game state
+            battle: The battle being defended
+            
+        Returns:
+            Blocker character ID, or None
+        """
+        from src.engine.abilities import has_blocker
+        
+        player = game_state.player1
+        
+        # Find characters with blocker that are ACTIVE
+        blockers = [c for c in player.characters 
+                   if has_blocker(c) and player.character_states.get(c.id) == CardState.ACTIVE]
+        
+        if not blockers:
+            return None
+        
+        # Create popup to choose blocker
+        dialog = tk.Toplevel(self)
+        dialog.title("Use Blocker?")
+        dialog.geometry("600x300")
+        dialog.configure(bg='#2b2b2b')
+        dialog.transient(self)
+        dialog.grab_set()
+        
+        selected_id = [None]
+        
+        # Get attacker info
+        attacker = battle.attacker
+        attacker_power = battle.attacker_power
+        
+        tk.Label(
+            dialog,
+            text=f"⚔️ Enemy {attacker.name} (Power: {attacker_power}) is attacking!\n\nUse a blocker?",
+            font=('Arial', 12, 'bold'),
+            fg='#ff6b6b',
+            bg='#2b2b2b'
+        ).pack(pady=10)
+        
+        # Blocker buttons
+        blocker_frame = tk.Frame(dialog, bg='#2b2b2b')
+        blocker_frame.pack(expand=True, fill='both', padx=20, pady=10)
+        
+        def select_blocker(char_id):
+            selected_id[0] = char_id
+            dialog.destroy()
+        
+        for char in blockers:
+            attached_don = player.attached_don.get(char.id, 0)
+            total_power = char.power + (attached_don * 1000 if game_state.active_player_id == player.player_id else 0)
+            
+            char_text = f"{char.name}\nPower: {total_power}\n🛡️ BLOCKER"
+            if attached_don > 0:
+                char_text += f"\n⚡×{attached_don}"
+            
+            btn = tk.Button(
+                blocker_frame,
+                text=char_text,
+                command=lambda c=char: select_blocker(c.id),
+                font=('Arial', 10),
+                bg='#4a7a4a',
+                fg='#ffffff',
+                relief='raised',
+                bd=3,
+                cursor='hand2',
+                width=15,
+                height=5
+            )
+            btn.pack(side='left', padx=5)
+        
+        # No blocker button
+        tk.Button(
+            dialog,
+            text="Don't Block",
+            command=dialog.destroy,
+            font=('Arial', 10, 'bold'),
+            bg='#ff6b6b',
+            fg='#ffffff',
+            relief='raised',
+            bd=2,
+            cursor='hand2',
+            padx=20,
+            pady=5
+        ).pack(pady=10)
+        
+        self.wait_window(dialog)
+        return selected_id[0]
+    
+    def choose_counters(self, game_state, battle):
+        """
+        Ask human player if they want to play counter cards.
+        
+        Called by HumanPlayer when AI attacks.
+        
+        Args:
+            game_state: Current game state
+            battle: The battle being defended
+            
+        Returns:
+            List of counter Event cards to play
+        """
+        from src.models import Event
+        
+        player = game_state.player1
+        
+        # Find cards with counter values in hand
+        counter_cards = [c for c in player.hand 
+                        if isinstance(c, Event) and hasattr(c, 'counter') and c.counter > 0]
+        
+        if not counter_cards:
+            return []
+        
+        # Create popup to choose counters
+        dialog = tk.Toplevel(self)
+        dialog.title("Play Counter Cards?")
+        dialog.geometry("700x400")
+        dialog.configure(bg='#2b2b2b')
+        dialog.transient(self)
+        dialog.grab_set()
+        
+        selected_cards = []
+        
+        # Get battle info
+        attacker = battle.attacker
+        attacker_power = battle.attacker_power
+        defender_power = battle.defender_power if battle.defender else 0
+        
+        tk.Label(
+            dialog,
+            text=f"⚔️ Enemy {attacker.name} (Power: {attacker_power}) vs Your Power: {defender_power}\n\nPlay counter cards from hand?",
+            font=('Arial', 12, 'bold'),
+            fg='#ff6b6b',
+            bg='#2b2b2b'
+        ).pack(pady=10)
+        
+        tk.Label(
+            dialog,
+            text="Select cards to discard for counter power (+1000 or +2000 each)",
+            font=('Arial', 10),
+            fg='#aaaaaa',
+            bg='#2b2b2b'
+        ).pack(pady=5)
+        
+        # Counter card checkboxes
+        card_frame = tk.Frame(dialog, bg='#2b2b2b')
+        card_frame.pack(expand=True, fill='both', padx=20, pady=10)
+        
+        card_vars = []
+        for card in counter_cards:
+            var = tk.BooleanVar()
+            card_vars.append((var, card))
+            
+            chk = tk.Checkbutton(
+                card_frame,
+                text=f"{card.name}\nCounter: +{card.counter}",
+                variable=var,
+                font=('Arial', 10),
+                bg='#3a3a3a',
+                fg='#ffffff',
+                selectcolor='#4a7a4a',
+                activebackground='#4a4a4a',
+                activeforeground='#ffffff',
+                relief='raised',
+                bd=2,
+                padx=10,
+                pady=10
+            )
+            chk.pack(side='left', padx=5)
+        
+        # Buttons frame
+        btn_frame = tk.Frame(dialog, bg='#2b2b2b')
+        btn_frame.pack(pady=10)
+        
+        def confirm_counters():
+            for var, card in card_vars:
+                if var.get():
+                    selected_cards.append(card)
+            dialog.destroy()
+        
+        tk.Button(
+            btn_frame,
+            text="Use Selected Counters",
+            command=confirm_counters,
+            font=('Arial', 10, 'bold'),
+            bg='#4a7a4a',
+            fg='#ffffff',
+            relief='raised',
+            bd=2,
+            cursor='hand2',
+            padx=15,
+            pady=5
+        ).pack(side='left', padx=5)
+        
+        tk.Button(
+            btn_frame,
+            text="Don't Counter",
+            command=dialog.destroy,
+            font=('Arial', 10),
+            bg='#666666',
+            fg='#ffffff',
+            relief='raised',
+            bd=2,
+            cursor='hand2',
+            padx=15,
+            pady=5
+        ).pack(side='left', padx=5)
+        
+        self.wait_window(dialog)
+        return selected_cards
     
     def update_don_pool_display(self):
         """Update the DON pool display with clickable DON cards."""
@@ -1075,6 +1556,125 @@ class GameScreen(ttk.Frame):
         """Show in-game menu (pause menu)."""
         self.status_label.config(text="Game paused.")
         # TODO: Implement pause menu
+    
+    def toggle_attack_mode(self):
+        """Enter/exit attack mode for declaring attacks."""
+        if not self.game or not self.game.state:
+            return
+        
+        # Check if it's player's turn
+        if self.game.state.active_player_id != self.game.state.player1.player_id:
+            self.status_label.config(text="Not your turn!")
+            return
+        
+        # Check if in correct phase (MAIN)
+        from src.engine.game_state import Phase
+        if self.game.state.current_phase != Phase.MAIN:
+            self.status_label.config(text="Can only attack during MAIN phase!")
+            return
+        
+        # Toggle mode
+        if self.attack_mode:
+            # Cancel attack mode
+            self.attack_mode = False
+            self.selected_attacker = None
+            self.is_leader_attacker = False
+            self.attack_btn.config(relief='raised', bg='#4a7a4a')
+            self.status_label.config(text="Attack cancelled")
+        else:
+            # Enter attack mode - exit DON mode if active
+            if self.don_attachment_mode:
+                self.don_attachment_mode = False
+            self.attack_mode = True
+            self.attack_btn.config(relief='sunken', bg='#3a6a3a')
+            self.status_label.config(text="⚔️ Select an ACTIVE character or leader to attack with")
+        
+        # Update display to show clickable attackers
+        self.update_display()
+    
+    def select_attacker(self, attacker_id, is_leader=False):
+        """Select a character or leader to attack with.
+        
+        Args:
+            attacker_id: Card ID or "leader"
+            is_leader: True if attacking with leader
+        """
+        self.selected_attacker = attacker_id
+        self.is_leader_attacker = is_leader
+        
+        attacker_name = "Leader" if is_leader else attacker_id[:8]
+        self.status_label.config(text=f"⚔️ {attacker_name} selected! Click opponent's LEADER or RESTED character to attack")
+        
+        # Update display to show attackable targets
+        self.update_display()
+    
+    def execute_attack(self, target_id):
+        """Execute the attack action.
+        
+        Args:
+            target_id: ID of target (opponent's leader or character)
+        """
+        if not self.selected_attacker:
+            return
+        
+        try:
+            from src.engine.actions import AttackAction, ActionType
+            
+            # Create attack action
+            action = AttackAction(
+                player_id=self.game.state.player1.player_id,
+                action_type=ActionType.ATTACK,
+                attacker_id=self.selected_attacker,
+                target_id=target_id,
+                is_leader_attack=self.is_leader_attacker
+            )
+            
+            # Show attacking message
+            attacker_name = "Leader" if self.is_leader_attacker else self.selected_attacker[:8]
+            target_name = "Leader" if target_id == "leader" else target_id[:8]
+            self.status_label.config(text=f"⚔️ {attacker_name} attacks {target_name}!")
+            self.update()
+            
+            # Execute attack (this handles blocker/counter prompts internally for AI)
+            success = self.game.execute_action(action)
+            
+            if success:
+                # Exit attack mode
+                self.attack_mode = False
+                self.selected_attacker = None
+                self.is_leader_attacker = False
+                self.attack_btn.config(relief='raised', bg='#4a7a4a')
+                
+                # Check if game is over
+                if self.game.state.is_game_over():
+                    winner = self.game.state.get_winner()
+                    if winner:
+                        winner_name = "You" if winner.player_id == self.game.state.player1.player_id else "Opponent"
+                        self.status_label.config(text=f"🏆 {winner_name} WIN!")
+                        self.attack_btn.config(state=tk.DISABLED)
+                        self.end_turn_btn.config(state=tk.DISABLED)
+                else:
+                    self.status_label.config(text=f"✅ Attack complete! Select another attacker or end turn.")
+                
+                # Update display
+                self.update_display()
+            else:
+                self.status_label.config(text=f"❌ Cannot attack with {attacker_name}")
+                # Reset selection but stay in attack mode
+                self.selected_attacker = None
+                self.is_leader_attacker = False
+                self.update_display()
+                
+        except Exception as e:
+            self.status_label.config(text=f"Error during attack: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            # Reset attack mode on error
+            self.attack_mode = False
+            self.selected_attacker = None
+            self.is_leader_attacker = False
+            self.attack_btn.config(relief='raised', bg='#4a7a4a')
+            self.update_display()
     
     def go_back(self):
         """Return to main menu."""

@@ -81,9 +81,8 @@ def _validate_play_card(game: GameState, action: PlayCardAction) -> tuple[bool, 
     
     # Type-specific validation
     if isinstance(action.card, Character):
-        # Check if character area is full (max 5)
-        if player.is_field_full():
-            return (False, "Character area is full (max 5 characters)")
+        # Field replacement handled in execution, no validation needed
+        pass
     
     elif isinstance(action.card, Leader):
         return (False, "Cannot play leaders as cards")
