@@ -85,6 +85,11 @@ class RandomAI:
             if action.action_type != ActionType.PASS_PHASE
         ]
         
+        # Debug: check for attack actions
+        attack_actions = [a for a in non_pass_actions if a.action_type == ActionType.ATTACK]
+        if len(attack_actions) > 0:
+            print(f"RandomAI has {len(attack_actions)} attack actions available")
+        
         # If no actions available, must pass
         if not non_pass_actions:
             return PassPhaseAction(
@@ -95,7 +100,13 @@ class RandomAI:
         # Decide whether to take an action or pass this turn
         # Use action_probability to create realistic play patterns
         # After taking several actions, increase chance of passing
-        should_act = random.random() < (self.action_probability / (1 + self.actions_this_turn * 0.2))
+        # Prioritize attacks - if we have attacks available, strongly prefer them
+        has_attacks = any(a.action_type == ActionType.ATTACK for a in non_pass_actions)
+        if has_attacks:
+            # Much higher chance to attack (90%)
+            should_act = random.random() < 0.9
+        else:
+            should_act = random.random() < (self.action_probability / (1 + self.actions_this_turn * 0.2))
         
         if not should_act:
             # Randomly decided to pass

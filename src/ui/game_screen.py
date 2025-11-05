@@ -42,6 +42,11 @@ class GameScreen(ttk.Frame):
         self.selected_attacker = None  # Card ID of selected attacker
         self.is_leader_attacker = False  # True if leader is attacking
         
+        # Counter mode state (when being attacked and selecting counters)
+        self.counter_mode = False
+        self.counter_battle = None  # Battle object when in counter mode
+        self.selected_counters = []  # List of cards selected to counter
+        
         # Create UI elements
         self.create_widgets()
         
@@ -189,14 +194,37 @@ class GameScreen(ttk.Frame):
         self.opp_leader_label.pack(expand=True)
         
         # Field (Characters)
-        tk.Label(opp_center, text="FIELD (Characters)", font=('Arial', 8), fg='#888', bg='#1e1e1e').pack(pady=2)
-        self.opponent_field_cards = tk.Frame(opp_center, bg='#1e1e1e', height=80)
-        self.opponent_field_cards.pack(fill='x', pady=2)
+        tk.Label(opp_center, text="FIELD (Characters)", font=('Arial', 8), fg='#888', bg='#1e1e1e').pack(pady=1)
+        self.opponent_field_cards = tk.Frame(opp_center, bg='#1e1e1e', height=70)
+        self.opponent_field_cards.pack(fill='x', pady=1)
         
         # Stage zone
-        tk.Label(opp_center, text="STAGE", font=('Arial', 8), fg='#888', bg='#1e1e1e').pack(pady=2)
-        self.opp_stage_zone = tk.Frame(opp_center, bg='#1e1e1e', height=60)
-        self.opp_stage_zone.pack(fill='x', pady=2)
+        tk.Label(opp_center, text="STAGE", font=('Arial', 8), fg='#888', bg='#1e1e1e').pack(pady=1)
+        self.opp_stage_zone = tk.Frame(opp_center, bg='#1e1e1e', height=40)
+        self.opp_stage_zone.pack(fill='x', pady=1)
+        
+        # === BATTLE INDICATOR (Between Opponent and Player) ===
+        battle_indicator_area = tk.Frame(game_board, bg='#1a1a1a', height=60)
+        battle_indicator_area.pack(fill='x', pady=2)
+        battle_indicator_area.pack_propagate(False)
+        
+        # Canvas for drawing battle arrow
+        self.battle_canvas = tk.Canvas(
+            battle_indicator_area,
+            bg='#1a1a1a',
+            highlightthickness=0
+        )
+        self.battle_canvas.pack(fill='both', expand=True)
+        
+        # Battle info label (shows attacker -> defender)
+        self.battle_info_label = tk.Label(
+            battle_indicator_area,
+            text="",
+            font=('Arial', 12, 'bold'),
+            fg='#ff6b6b',
+            bg='#1a1a1a'
+        )
+        self.battle_info_label.pack()
         
         # === PLAYER AREA (Bottom Half) ===
         player_area = tk.Frame(game_board, bg='#1e1e1e', relief='solid', bd=2)
@@ -256,14 +284,14 @@ class GameScreen(ttk.Frame):
         player_center.pack(side='left', fill='both', expand=True)
         
         # Stage zone
-        tk.Label(player_center, text="STAGE", font=('Arial', 8), fg='#888', bg='#1e1e1e').pack(pady=2)
-        self.player_stage_zone = tk.Frame(player_center, bg='#1e1e1e', height=60)
-        self.player_stage_zone.pack(fill='x', pady=2)
+        tk.Label(player_center, text="STAGE", font=('Arial', 8), fg='#888', bg='#1e1e1e').pack(pady=1)
+        self.player_stage_zone = tk.Frame(player_center, bg='#1e1e1e', height=40)
+        self.player_stage_zone.pack(fill='x', pady=1)
         
         # Field (Characters)
-        tk.Label(player_center, text="FIELD (Characters)", font=('Arial', 8), fg='#888', bg='#1e1e1e').pack(pady=2)
-        self.player_field_cards = tk.Frame(player_center, bg='#1e1e1e', height=80)
-        self.player_field_cards.pack(fill='x', pady=2)
+        tk.Label(player_center, text="FIELD (Characters)", font=('Arial', 8), fg='#888', bg='#1e1e1e').pack(pady=1)
+        self.player_field_cards = tk.Frame(player_center, bg='#1e1e1e', height=70)
+        self.player_field_cards.pack(fill='x', pady=1)
         
         # Leader zone
         tk.Label(player_center, text="LEADER", font=('Arial', 8), fg='#888', bg='#1e1e1e').pack(pady=2)
@@ -280,14 +308,32 @@ class GameScreen(ttk.Frame):
         self.player_leader_label.pack(expand=True)
         
         # Hand
-        tk.Label(player_center, text="YOUR HAND", font=('Arial', 8), fg='#888', bg='#1e1e1e').pack(pady=2)
-        self.player_hand_cards = tk.Frame(player_center, bg='#2a2a2a', height=90)
-        self.player_hand_cards.pack(fill='x', pady=2)
+        tk.Label(player_center, text="YOUR HAND", font=('Arial', 8), fg='#888', bg='#1e1e1e').pack(pady=1)
+        
+        # Create a frame with horizontal scrollbar for hand
+        hand_container = tk.Frame(player_center, bg='#2a2a2a', height=120)
+        hand_container.pack(fill='x', pady=1)
+        hand_container.pack_propagate(False)
+        
+        # Canvas for scrolling
+        self.player_hand_canvas = tk.Canvas(hand_container, bg='#2a2a2a', height=120, highlightthickness=0)
+        self.player_hand_scrollbar = tk.Scrollbar(hand_container, orient='horizontal', command=self.player_hand_canvas.xview)
+        self.player_hand_cards = tk.Frame(self.player_hand_canvas, bg='#2a2a2a')
+        
+        self.player_hand_scrollbar.pack(side='bottom', fill='x')
+        self.player_hand_canvas.pack(side='top', fill='both', expand=True)
+        
+        # Create window in canvas
+        self.player_hand_canvas_window = self.player_hand_canvas.create_window((0, 0), window=self.player_hand_cards, anchor='nw')
+        self.player_hand_canvas.configure(xscrollcommand=self.player_hand_scrollbar.set)
+        
+        # Bind configure to update scroll region
+        self.player_hand_cards.bind('<Configure>', lambda e: self.player_hand_canvas.configure(scrollregion=self.player_hand_canvas.bbox('all')))
         
         # DON Pool (Interactive)
-        tk.Label(player_center, text="DON POOL (Click to attach)", font=('Arial', 8), fg='#ffd700', bg='#1e1e1e').pack(pady=2)
-        self.player_don_pool_frame = tk.Frame(player_center, bg='#2a2a2a', height=50)
-        self.player_don_pool_frame.pack(fill='x', pady=2)
+        tk.Label(player_center, text="DON POOL (Click to attach)", font=('Arial', 8), fg='#ffd700', bg='#1e1e1e').pack(pady=1)
+        self.player_don_pool_frame = tk.Frame(player_center, bg='#2a2a2a')
+        self.player_don_pool_frame.pack(fill='x', pady=1)
         
         # === ACTION PANEL (Right Side) ===
         # Title
@@ -858,8 +904,8 @@ class GameScreen(ttk.Frame):
                 activebackground='#4a7a9a',
                 relief='raised',
                 bd=2,
-                width=12,
-                height=5,
+                width=16,
+                height=7,
                 cursor='hand2',
                 command=lambda c=card: self.play_card(c)
             )
@@ -1018,6 +1064,10 @@ class GameScreen(ttk.Frame):
         
         player = game_state.player1
         
+        # Safety check: only show dialog if it's NOT player's turn (being attacked by AI)
+        if game_state.active_player_id == player.player_id:
+            return None
+        
         # Find characters with blocker that are ACTIVE
         blockers = [c for c in player.characters 
                    if has_blocker(c) and player.character_states.get(c.id) == CardState.ACTIVE]
@@ -1025,82 +1075,60 @@ class GameScreen(ttk.Frame):
         if not blockers:
             return None
         
-        # Create popup to choose blocker
-        dialog = tk.Toplevel(self)
-        dialog.title("Use Blocker?")
-        dialog.geometry("600x300")
-        dialog.configure(bg='#2b2b2b')
-        dialog.transient(self)
-        dialog.grab_set()
-        
-        selected_id = [None]
-        
-        # Get attacker info
+        # Show battle indicator
         attacker = battle.attacker
         attacker_power = battle.attacker_power
         
-        tk.Label(
-            dialog,
-            text=f"⚔️ Enemy {attacker.name} (Power: {attacker_power}) is attacking!\n\nUse a blocker?",
-            font=('Arial', 12, 'bold'),
-            fg='#ff6b6b',
-            bg='#2b2b2b'
-        ).pack(pady=10)
+        self.show_battle_indicator(
+            attacker_name=f"{attacker.name} ({attacker_power} power)",
+            defender_name="Your Leader",
+            is_ai_attacking=True
+        )
+        self.update()
         
-        # Blocker buttons
-        blocker_frame = tk.Frame(dialog, bg='#2b2b2b')
-        blocker_frame.pack(expand=True, fill='both', padx=20, pady=10)
+        # Use simple messagebox for blocker selection
+        import tkinter.messagebox as messagebox
+        import tkinter.simpledialog as simpledialog
         
-        def select_blocker(char_id):
-            selected_id[0] = char_id
-            dialog.destroy()
-        
-        for char in blockers:
+        msg = f"⚔️ {attacker.name} ({attacker_power} power) is attacking!\n\n"
+        msg += "Available blockers:\n"
+        for i, char in enumerate(blockers, 1):
             attached_don = player.attached_don.get(char.id, 0)
             total_power = char.power + (attached_don * 1000 if game_state.active_player_id == player.player_id else 0)
-            
-            char_text = f"{char.name}\nPower: {total_power}\n🛡️ BLOCKER"
-            if attached_don > 0:
-                char_text += f"\n⚡×{attached_don}"
-            
-            btn = tk.Button(
-                blocker_frame,
-                text=char_text,
-                command=lambda c=char: select_blocker(c.id),
-                font=('Arial', 10),
-                bg='#4a7a4a',
-                fg='#ffffff',
-                relief='raised',
-                bd=3,
-                cursor='hand2',
-                width=15,
-                height=5
-            )
-            btn.pack(side='left', padx=5)
+            msg += f"{i}. {char.name} (Power: {total_power})\n"
         
-        # No blocker button
-        tk.Button(
-            dialog,
-            text="Don't Block",
-            command=dialog.destroy,
-            font=('Arial', 10, 'bold'),
-            bg='#ff6b6b',
-            fg='#ffffff',
-            relief='raised',
-            bd=2,
-            cursor='hand2',
-            padx=20,
-            pady=5
-        ).pack(pady=10)
+        use_blocker = messagebox.askyesno(
+            "Use Blocker?",
+            msg + "\nDo you want to use a blocker?",
+            parent=self
+        )
         
-        self.wait_window(dialog)
-        return selected_id[0]
+        if not use_blocker:
+            self.clear_battle_indicator()
+            return None
+        
+        # Ask which blocker
+        choice = simpledialog.askinteger(
+            "Select Blocker",
+            "Enter blocker number:",
+            minvalue=1,
+            maxvalue=len(blockers),
+            parent=self
+        )
+        
+        self.clear_battle_indicator()
+        
+        if choice and 1 <= choice <= len(blockers):
+            return blockers[choice - 1].id
+        
+        return None
     
     def choose_counters(self, game_state, battle):
         """
         Ask human player if they want to play counter cards.
         
-        Called by HumanPlayer when AI attacks.
+        Enters counter mode where hand cards with counter become clickable inline.
+        Uses a callback-based approach since this is called from game engine.
         
         Args:
             game_state: Current game state
@@ -1111,142 +1139,79 @@ class GameScreen(ttk.Frame):
         """
         player = game_state.player1
         
+        # Safety check: only show dialog if it's NOT player's turn (being attacked by AI)
+        if game_state.active_player_id == player.player_id:
+            return []
+        
         # Find ALL cards with counter values in hand (Characters and Events)
         counter_cards = [c for c in player.hand if hasattr(c, 'counter') and c.counter > 0]
         
         if not counter_cards:
             return []
         
-        # Create popup to choose counters
-        dialog = tk.Toplevel(self)
-        dialog.title("Use Counter Cards?")
-        dialog.geometry("800x500")
-        dialog.configure(bg='#2b2b2b')
-        dialog.transient(self)
-        dialog.grab_set()
-        
-        selected_cards = []
+        # Simple immediate return approach for now - just show a simple dialog
+        # that doesn't gray out the screen
+        import tkinter.simpledialog as simpledialog
+        import tkinter.messagebox as messagebox
         
         # Get battle info
         attacker = battle.attacker
         attacker_power = battle.attacker_power
+        defender = battle.defender
+        defender_name = defender.name if defender else "Leader"
         defender_power = battle.defender_power if battle.defender else 0
         
-        tk.Label(
-            dialog,
-            text=f"⚔️ Enemy {attacker.name} (Power: {attacker_power}) attacking!",
-            font=('Arial', 14, 'bold'),
-            fg='#ff6b6b',
-            bg='#2b2b2b'
-        ).pack(pady=10)
-        
-        tk.Label(
-            dialog,
-            text=f"Your Defense Power: {defender_power}",
-            font=('Arial', 12),
-            fg='#4a7a4a',
-            bg='#2b2b2b'
-        ).pack(pady=5)
-        
-        tk.Label(
-            dialog,
-            text="Click cards to discard for counter power, then click 'Finish'",
-            font=('Arial', 10),
-            fg='#aaaaaa',
-            bg='#2b2b2b'
-        ).pack(pady=5)
-        
-        # Counter display
-        total_counter = [0]
-        counter_label = tk.Label(
-            dialog,
-            text=f"Total Counter: +{total_counter[0]}",
-            font=('Arial', 12, 'bold'),
-            fg='#ffd700',
-            bg='#2b2b2b'
+        # Show battle indicator
+        self.show_battle_indicator(
+            attacker_name=f"{attacker.name} ({attacker_power} power)",
+            defender_name=defender_name,
+            is_ai_attacking=True
         )
-        counter_label.pack(pady=10)
+        self.update()
         
-        # Counter card buttons
-        card_frame = tk.Frame(dialog, bg='#2b2b2b')
-        card_frame.pack(expand=True, fill='both', padx=20, pady=10)
+        # Show simple message
+        msg = f"⚔️ {attacker.name} ({attacker_power} power) attacking {defender_name}!\n"
+        msg += f"Your defense: {defender_power} power\n\n"
+        msg += "Counter cards available:\n"
+        for i, card in enumerate(counter_cards, 1):
+            msg += f"{i}. {card.name} [+{card.counter}]\n"
         
-        def toggle_card(card, btn):
-            if card in selected_cards:
-                # Deselect
-                selected_cards.remove(card)
-                btn.config(bg='#3a6a8a', relief='raised')
-                total_counter[0] -= card.counter
-            else:
-                # Select
-                selected_cards.append(card)
-                btn.config(bg='#4a9a4a', relief='sunken')
-                total_counter[0] += card.counter
-            
-            counter_label.config(text=f"Total Counter: +{total_counter[0]}")
+        use_counter = messagebox.askyesno(
+            "Counter Attack?",
+            msg + "\nDo you want to use counter cards?",
+            parent=self
+        )
         
-        for card in counter_cards:
-            from src.models import Character, Event
-            card_text = f"{card.name}\n"
-            if isinstance(card, Character):
-                card_text += f"Power: {card.power}\n"
-            card_text += f"[Counter +{card.counter}]"
-            
-            btn = tk.Button(
-                card_frame,
-                text=card_text,
-                command=lambda c=card, b=None: toggle_card(c, card_buttons[c]),
-                font=('Arial', 10),
-                bg='#3a6a8a',
-                fg='#ffffff',
-                relief='raised',
-                bd=3,
-                cursor='hand2',
-                width=15,
-                height=5
+        if not use_counter:
+            self.clear_battle_indicator()
+            return []
+        
+        # For now, let player select multiple by entering numbers (comma-separated)
+        selected_cards = []
+        while True:
+            choice = simpledialog.askstring(
+                "Select Counters",
+                f"Available counters:\n" + "\n".join([f"{i}. {c.name} [+{c.counter}]" for i, c in enumerate(counter_cards, 1)]) +
+                f"\n\nAlready selected: {sum(c.counter for c in selected_cards)} power" +
+                "\n\nEnter card number to add (or 'done' to finish):",
+                parent=self
             )
-            btn.pack(side='left', padx=5)
-            if not 'card_buttons' in locals():
-                card_buttons = {}
-            card_buttons[card] = btn
+            
+            if choice is None or choice.lower() == 'done':
+                break
+            
+            try:
+                idx = int(choice) - 1
+                if 0 <= idx < len(counter_cards):
+                    card = counter_cards[idx]
+                    if card not in selected_cards:
+                        selected_cards.append(card)
+            except:
+                pass
         
-        # Buttons frame
-        btn_frame = tk.Frame(dialog, bg='#2b2b2b')
-        btn_frame.pack(pady=15)
-        
-        def finish_counters():
-            dialog.destroy()
-        
-        tk.Button(
-            btn_frame,
-            text="✓ Finish (Use Selected Counters)",
-            command=finish_counters,
-            font=('Arial', 11, 'bold'),
-            bg='#4a7a4a',
-            fg='#ffffff',
-            relief='raised',
-            bd=3,
-            cursor='hand2',
-            padx=20,
-            pady=10
-        ).pack(side='left', padx=5)
-        
-        tk.Button(
-            btn_frame,
-            text="✗ No Counter",
-            command=lambda: (selected_cards.clear(), dialog.destroy()),
-            font=('Arial', 11),
-            bg='#666666',
-            fg='#ffffff',
-            relief='raised',
-            bd=2,
-            cursor='hand2',
-            padx=20,
-            pady=10
-        ).pack(side='left', padx=5)
-        
-        self.wait_window(dialog)
+        self.clear_battle_indicator()
         return selected_cards
+
     
     def update_don_pool_display(self):
         """Update the DON pool display with clickable DON cards."""
@@ -1564,28 +1529,26 @@ class GameScreen(ttk.Frame):
             
             # AI finished MAIN phase, end its turn and return to player
             self.status_label.config(text="AI ending turn...")
+            self.update_display()
             self.update()
             self.after(500)
             
-            # Switch back to player
+            # Switch back to player and increment turn
             self.game.state.switch_active_player()
             self.game.state.current_turn += 1
             
             # Start player's turn with automatic phases
-            self.start_turn_phases(is_player=True)
+            self.after(1000, lambda: self.start_turn_phases(is_player=True))
             
         except Exception as e:
             self.status_label.config(text=f"Error during AI turn: {str(e)}")
             import traceback
             traceback.print_exc()
             
+            # Try to recover by giving turn back to player
+            self.game.state.active_player_id = self.game.state.player1.player_id
             self.update_display()
             self.status_label.config(text="Your turn!")
-            
-        except Exception as e:
-            self.status_label.config(text=f"Error during AI turn: {str(e)}")
-            import traceback
-            traceback.print_exc()
     
     def suggest_move(self):
         """Show best move suggestion."""
@@ -1674,14 +1637,27 @@ class GameScreen(ttk.Frame):
                 is_leader_attack=self.is_leader_attacker
             )
             
-            # Show attacking message
+            # Get attacker and target names
             attacker_name = "Leader" if self.is_leader_attacker else self.selected_attacker[:8]
             target_name = "Leader" if target_id == "leader" else target_id[:8]
+            
+            # Show battle indicator
+            self.show_battle_indicator(
+                attacker_name=attacker_name,
+                defender_name=target_name,
+                is_ai_attacking=False
+            )
             self.status_label.config(text=f"⚔️ {attacker_name} attacks {target_name}!")
             self.update()
             
+            # Small delay to show the arrow
+            self.after(500)
+            
             # Execute attack (this handles blocker/counter prompts internally for AI)
             success = self.game.execute_action(action)
+            
+            # Clear battle indicator after attack resolves
+            self.clear_battle_indicator()
             
             if success:
                 # Exit attack mode
@@ -1720,6 +1696,95 @@ class GameScreen(ttk.Frame):
             self.is_leader_attacker = False
             self.attack_btn.config(relief='raised', bg='#4a7a4a')
             self.update_display()
+    
+    def show_battle_indicator(self, attacker_name, defender_name, is_ai_attacking):
+        """Show visual battle indicator with arrow.
+        
+        Args:
+            attacker_name: Name of attacking card
+            defender_name: Name of defending card
+            is_ai_attacking: True if AI is attacking player, False if player attacking AI
+        """
+        # Clear canvas
+        self.battle_canvas.delete('all')
+        
+        # Get canvas dimensions
+        width = self.battle_canvas.winfo_width()
+        if width <= 1:  # Canvas not yet rendered
+            width = 600
+        height = self.battle_canvas.winfo_height()
+        if height <= 1:
+            height = 80
+        
+        # Draw arrow
+        arrow_color = '#ff6b6b' if is_ai_attacking else '#4a9eff'
+        arrow_width = 5
+        
+        if is_ai_attacking:
+            # Arrow points downward (AI -> Player)
+            start_y = 10
+            end_y = height - 10
+            mid_x = width // 2
+            
+            self.battle_canvas.create_line(
+                mid_x, start_y, mid_x, end_y,
+                arrow=tk.LAST,
+                fill=arrow_color,
+                width=arrow_width
+            )
+            
+            # Attacker label (top)
+            self.battle_canvas.create_text(
+                mid_x, start_y - 5,
+                text=f"⚔️ {attacker_name}",
+                fill='#ff6b6b',
+                font=('Arial', 11, 'bold'),
+                anchor='s'
+            )
+            
+            # Defender label (bottom)
+            self.battle_canvas.create_text(
+                mid_x, end_y + 5,
+                text=f"🛡️ {defender_name}",
+                fill='#4a9eff',
+                font=('Arial', 11, 'bold'),
+                anchor='n'
+            )
+        else:
+            # Arrow points upward (Player -> AI)
+            start_y = height - 10
+            end_y = 10
+            mid_x = width // 2
+            
+            self.battle_canvas.create_line(
+                mid_x, start_y, mid_x, end_y,
+                arrow=tk.LAST,
+                fill=arrow_color,
+                width=arrow_width
+            )
+            
+            # Attacker label (bottom)
+            self.battle_canvas.create_text(
+                mid_x, start_y + 5,
+                text=f"⚔️ {attacker_name}",
+                fill='#4a9eff',
+                font=('Arial', 11, 'bold'),
+                anchor='n'
+            )
+            
+            # Defender label (top)
+            self.battle_canvas.create_text(
+                mid_x, end_y - 5,
+                text=f"🛡️ {defender_name}",
+                fill='#ff6b6b',
+                font=('Arial', 11, 'bold'),
+                anchor='s'
+            )
+    
+    def clear_battle_indicator(self):
+        """Clear the battle indicator."""
+        self.battle_canvas.delete('all')
+        self.battle_info_label.config(text="")
     
     def go_back(self):
         """Return to main menu."""
