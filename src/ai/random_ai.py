@@ -189,6 +189,8 @@ class RandomAI:
                 if counter_value > 0:
                     available_counters.append(card)
         
+        print(f"[RandomAI] Defensive counters check: {len(available_counters)} counters available")
+        
         # If no counters available, can't counter
         if not available_counters:
             return []
@@ -199,8 +201,10 @@ class RandomAI:
             # Randomly choose how many counters to play (1-3)
             num_counters = random.randint(1, min(3, len(available_counters)))
             counters = random.sample(available_counters, num_counters)
+            print(f"[RandomAI] Playing {len(counters)} counter cards")
             return counters
         
+        print(f"[RandomAI] Decided not to counter (random)")
         return []
     
     def __repr__(self):

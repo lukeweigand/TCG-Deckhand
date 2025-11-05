@@ -18,8 +18,8 @@ class TCGDeckhandApp(tk.Tk):
         
         # Window configuration
         self.title("TCG Deckhand")
-        self.geometry("1024x768")
-        self.minsize(800, 600)
+        self.geometry("1280x900")
+        self.minsize(1024, 768)
         
         # Center window on screen
         self.center_window()

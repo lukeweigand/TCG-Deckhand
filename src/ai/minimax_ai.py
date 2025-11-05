@@ -451,8 +451,11 @@ class MinimaxAI:
             if isinstance(card, Event) and get_counter_value(card) > 0:
                 counters.append(card)
         
+        print(f"[MinimaxAI] Defensive counters check: {len(counters)} counters available")
+        
         # Use one counter (can improve this logic)
         if counters:
+            print(f"[MinimaxAI] Playing 1 counter card")
             return [counters[0]]
         
         return []

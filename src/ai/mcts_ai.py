@@ -345,6 +345,8 @@ class MCTSAI:
                 if counter_value > 0:
                     available_counters.append((card, counter_value))
         
+        print(f"[MCTSAI] Defensive counters check: {len(available_counters)} counters available")
+        
         if not available_counters:
             return []
         
@@ -353,8 +355,11 @@ class MCTSAI:
         defender_power = battle.defender_power
         damage_difference = battle.attacker_power - defender_power
         
+        print(f"[MCTSAI] Attacker power: {battle.attacker_power}, Defender power: {defender_power}, Difference: {damage_difference}")
+        
         # If we're already winning the battle, don't counter
         if damage_difference <= 0:
+            print(f"[MCTSAI] Already winning battle, not countering")
             return []
         
         # Use counters to close the gap (but don't waste too many)
@@ -370,6 +375,7 @@ class MCTSAI:
                 if remaining_difference <= 0:
                     break
         
+        print(f"[MCTSAI] Playing {len(counters_to_play)} counter cards to close gap")
         return counters_to_play
 
 

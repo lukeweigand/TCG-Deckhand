@@ -237,11 +237,14 @@ def apply_counter(game: GameState, battle: Battle, counter_card: Event, target_i
     defender.trash.append(counter_card)
     battle.counters_played.append(counter_card)
     
+    print(f"[Battle] Counter card played: {counter_card.name} (Counter: {counter_card.counter if hasattr(counter_card, 'counter') else 0})")
+    
     # Parse counter effect (simplified - in real implementation, parse from effect_text)
     # For now, assume counter value equals the card's counter attribute
     if hasattr(counter_card, 'counter') and counter_card.counter > 0:
         # Add counter value to defender's power
         battle.add_power_modification(f"counter_{counter_card.name}", counter_card.counter)
+        print(f"[Battle] Counter added {counter_card.counter} to defender power. New defender power: {battle.defender_power}")
 
 
 def resolve_battle(game: GameState, battle: Battle) -> str:
