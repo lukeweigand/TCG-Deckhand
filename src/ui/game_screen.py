@@ -560,6 +560,15 @@ class GameScreen(ttk.Frame):
                 starting_player=1
             )
             
+            # CRITICAL FIX: Update player IDs to match game state UUIDs
+            # initialize_game() creates PlayerState objects with random UUIDs,
+            # but the AI/HumanPlayer objects were created with simple IDs ("1", "2").
+            # We must sync them so action validation works correctly.
+            # This applies to ALL difficulty levels: easy (RandomAI), medium (MCTSAI),
+            # hard/expert (MinimaxAI) - all use player_id for defensive methods.
+            human_player.player_id = self.game.state.player1.player_id
+            ai.player_id = self.game.state.player2.player_id
+            
             # Start the first turn with automatic phases
             self.status_label.config(text="Game started!")
             self.update_display()

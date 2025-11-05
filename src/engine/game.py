@@ -149,6 +149,10 @@ class Game:
         if self.state is None:
             return False
         
+        # Debug logging
+        print(f"[DEBUG] Executing action: {action.action_type.value} by player {action.player_id}")
+        print(f"[DEBUG] Active player is: {self.state.active_player_id}")
+        
         # Validate action first
         is_valid, error = validate_action(self.state, action)
         if not is_valid:

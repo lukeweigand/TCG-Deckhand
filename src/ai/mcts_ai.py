@@ -67,6 +67,7 @@ class MCTSAI:
             difficulty: Time budget for search (EASY/MEDIUM/HARD)
             exploration_weight: UCB1 exploration constant (sqrt(2) is optimal)
         """
+        self.player_id = None  # Will be set after game initialization
         self.difficulty = difficulty
         self.exploration_weight = exploration_weight
         
@@ -296,10 +297,10 @@ class MCTSAI:
             Character ID to use as blocker, or None to not block
         """
         # For now, use random defensive logic (can enhance later with MCTS)
-        # Get this player's state
-        player_id = game_state.active_player_id
-        opponent_id = 2 if player_id == 1 else 1
-        player = game_state.player1 if game_state.player1.player_id == opponent_id else game_state.player2
+        # Get this player's state (the DEFENDER, not the active attacker)
+        # When defending, the active_player_id is the ATTACKER, so we need the opponent
+        defender_id = self.player_id
+        player = game_state.player1 if game_state.player1.player_id == defender_id else game_state.player2
         
         # Find all available blockers
         available_blockers = []
@@ -332,10 +333,9 @@ class MCTSAI:
         Returns:
             List of Event cards to play as counters (empty list = no counters)
         """
-        # Get this player's state
-        player_id = game_state.active_player_id
-        opponent_id = 2 if player_id == 1 else 1
-        player = game_state.player1 if game_state.player1.player_id == opponent_id else game_state.player2
+        # Get this player's state (the DEFENDER, not the active attacker)
+        defender_id = self.player_id
+        player = game_state.player1 if game_state.player1.player_id == defender_id else game_state.player2
         
         # Find counter cards in hand
         available_counters = []
