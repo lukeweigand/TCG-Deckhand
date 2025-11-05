@@ -9,8 +9,8 @@ import random
 from uuid import uuid4
 from typing import List
 
-from ..models import Deck, Leader, AnyCard
-from .game_state import GameState, PlayerState
+from src.models import Deck, Leader, AnyCard
+from src.engine.game_state import GameState, PlayerState
 
 
 def shuffle_deck(cards: List[AnyCard]) -> List[AnyCard]:

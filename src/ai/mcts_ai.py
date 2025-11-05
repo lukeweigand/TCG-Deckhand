@@ -313,10 +313,10 @@ class MCTSAI:
             return None
         
         # Simple heuristic: block if attacker is stronger than our weakest blocker
-        attacker = battle.attacker
+        attacker_power = battle.attacker_power
         weakest_blocker = min(available_blockers, key=lambda c: c.power)
         
-        if attacker.power >= weakest_blocker.power:
+        if attacker_power >= weakest_blocker.power:
             return weakest_blocker.id
         
         return None
@@ -350,8 +350,8 @@ class MCTSAI:
         
         # Simple heuristic: counter if it would save us from taking damage
         # Calculate damage deficit
-        defender_power = battle.defender.power if battle.defender else 0
-        damage_difference = battle.attacker.power - defender_power
+        defender_power = battle.defender_power
+        damage_difference = battle.attacker_power - defender_power
         
         # If we're already winning the battle, don't counter
         if damage_difference <= 0:

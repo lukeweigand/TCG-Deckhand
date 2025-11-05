@@ -1084,12 +1084,20 @@ class GameScreen(ttk.Frame):
         if not blockers:
             return None
         
-        # Show battle indicator
-        attacker = battle.attacker
+        # Get attacker info from battle
         attacker_power = battle.attacker_power
         
+        # Get attacker name
+        if battle.attacker_is_leader:
+            attacker_player = game_state.player1 if game_state.active_player_id == game_state.player1.player_id else game_state.player2
+            attacker_name = attacker_player.leader.name
+        else:
+            attacker_player = game_state.player1 if game_state.active_player_id == game_state.player1.player_id else game_state.player2
+            attacker_card = next((c for c in attacker_player.characters if c.id == battle.attacker_id), None)
+            attacker_name = attacker_card.name if attacker_card else "Unknown"
+        
         self.show_battle_indicator(
-            attacker_name=f"{attacker.name} ({attacker_power} power)",
+            attacker_name=f"{attacker_name} ({attacker_power} power)",
             defender_name="Your Leader",
             is_ai_attacking=True
         )
@@ -1099,7 +1107,7 @@ class GameScreen(ttk.Frame):
         import tkinter.messagebox as messagebox
         import tkinter.simpledialog as simpledialog
         
-        msg = f"⚔️ {attacker.name} ({attacker_power} power) is attacking!\n\n"
+        msg = f"⚔️ {attacker_name} ({attacker_power} power) is attacking!\n\n"
         msg += "Available blockers:\n"
         for i, char in enumerate(blockers, 1):
             attached_don = player.attached_don.get(char.id, 0)
@@ -1164,22 +1172,36 @@ class GameScreen(ttk.Frame):
         import tkinter.messagebox as messagebox
         
         # Get battle info
-        attacker = battle.attacker
         attacker_power = battle.attacker_power
-        defender = battle.defender
-        defender_name = defender.name if defender else "Leader"
-        defender_power = battle.defender_power if battle.defender else 0
+        defender_power = battle.defender_power
+        
+        # Get attacker name
+        if battle.attacker_is_leader:
+            attacker_player = game_state.player1 if game_state.active_player_id == game_state.player1.player_id else game_state.player2
+            attacker_name = attacker_player.leader.name
+        else:
+            attacker_player = game_state.player1 if game_state.active_player_id == game_state.player1.player_id else game_state.player2
+            attacker_card = next((c for c in attacker_player.characters if c.id == battle.attacker_id), None)
+            attacker_name = attacker_card.name if attacker_card else "Unknown"
+        
+        # Get defender name
+        if battle.target_is_leader:
+            defender_name = "Leader"
+        else:
+            defender_player = game_state.player1 if game_state.active_player_id != game_state.player1.player_id else game_state.player2
+            defender_card = next((c for c in defender_player.characters if c.id == battle.current_target_id), None)
+            defender_name = defender_card.name if defender_card else "Unknown"
         
         # Show battle indicator
         self.show_battle_indicator(
-            attacker_name=f"{attacker.name} ({attacker_power} power)",
+            attacker_name=f"{attacker_name} ({attacker_power} power)",
             defender_name=defender_name,
             is_ai_attacking=True
         )
         self.update()
         
         # Show simple message
-        msg = f"⚔️ {attacker.name} ({attacker_power} power) attacking {defender_name}!\n"
+        msg = f"⚔️ {attacker_name} ({attacker_power} power) attacking {defender_name}!\n"
         msg += f"Your defense: {defender_power} power\n\n"
         msg += "Counter cards available:\n"
         for i, card in enumerate(counter_cards, 1):
