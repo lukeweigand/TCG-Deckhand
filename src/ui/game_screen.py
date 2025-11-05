@@ -447,16 +447,31 @@ class GameScreen(ttk.Frame):
                 effect_text="Leader ability"
             )
             
-            # Create test deck
+            # Create test deck with varied abilities
             deck_cards = []
             for i in range(50):
-                deck_cards.append(Character(
+                effect_parts = []
+                
+                # Every 5th card gets Blocker
+                if i % 5 == 0:
+                    effect_parts.append("[Blocker]")
+                
+                # Every 7th card gets Rush  
+                if i % 7 == 0:
+                    effect_parts.append("[Rush]")
+                
+                # Counter values vary
+                counter_value = 1000 if i % 3 == 0 else (2000 if i % 3 == 1 else 0)
+                
+                char = Character(
                     name=f"Pirate {i+1}",
                     cost=min((i % 5) + 1, 4),
                     power=2000 + ((i % 5) * 1000),
-                    counter=1000,
-                    effect_text=""
-                ))
+                    counter=counter_value,
+                    effect_text=" ".join(effect_parts) if effect_parts else ""
+                )
+                
+                deck_cards.append(char)
             
             deck = Deck(name="Test Deck", leader=leader, cards=deck_cards)
             
@@ -1092,23 +1107,20 @@ class GameScreen(ttk.Frame):
             battle: The battle being defended
             
         Returns:
-            List of counter Event cards to play
+            List of counter cards to play (any card with counter > 0)
         """
-        from src.models import Event
-        
         player = game_state.player1
         
-        # Find cards with counter values in hand
-        counter_cards = [c for c in player.hand 
-                        if isinstance(c, Event) and hasattr(c, 'counter') and c.counter > 0]
+        # Find ALL cards with counter values in hand (Characters and Events)
+        counter_cards = [c for c in player.hand if hasattr(c, 'counter') and c.counter > 0]
         
         if not counter_cards:
             return []
         
         # Create popup to choose counters
         dialog = tk.Toplevel(self)
-        dialog.title("Play Counter Cards?")
-        dialog.geometry("700x400")
+        dialog.title("Use Counter Cards?")
+        dialog.geometry("800x500")
         dialog.configure(bg='#2b2b2b')
         dialog.transient(self)
         dialog.grab_set()
@@ -1122,82 +1134,115 @@ class GameScreen(ttk.Frame):
         
         tk.Label(
             dialog,
-            text=f"⚔️ Enemy {attacker.name} (Power: {attacker_power}) vs Your Power: {defender_power}\n\nPlay counter cards from hand?",
-            font=('Arial', 12, 'bold'),
+            text=f"⚔️ Enemy {attacker.name} (Power: {attacker_power}) attacking!",
+            font=('Arial', 14, 'bold'),
             fg='#ff6b6b',
             bg='#2b2b2b'
         ).pack(pady=10)
         
         tk.Label(
             dialog,
-            text="Select cards to discard for counter power (+1000 or +2000 each)",
+            text=f"Your Defense Power: {defender_power}",
+            font=('Arial', 12),
+            fg='#4a7a4a',
+            bg='#2b2b2b'
+        ).pack(pady=5)
+        
+        tk.Label(
+            dialog,
+            text="Click cards to discard for counter power, then click 'Finish'",
             font=('Arial', 10),
             fg='#aaaaaa',
             bg='#2b2b2b'
         ).pack(pady=5)
         
-        # Counter card checkboxes
+        # Counter display
+        total_counter = [0]
+        counter_label = tk.Label(
+            dialog,
+            text=f"Total Counter: +{total_counter[0]}",
+            font=('Arial', 12, 'bold'),
+            fg='#ffd700',
+            bg='#2b2b2b'
+        )
+        counter_label.pack(pady=10)
+        
+        # Counter card buttons
         card_frame = tk.Frame(dialog, bg='#2b2b2b')
         card_frame.pack(expand=True, fill='both', padx=20, pady=10)
         
-        card_vars = []
-        for card in counter_cards:
-            var = tk.BooleanVar()
-            card_vars.append((var, card))
+        def toggle_card(card, btn):
+            if card in selected_cards:
+                # Deselect
+                selected_cards.remove(card)
+                btn.config(bg='#3a6a8a', relief='raised')
+                total_counter[0] -= card.counter
+            else:
+                # Select
+                selected_cards.append(card)
+                btn.config(bg='#4a9a4a', relief='sunken')
+                total_counter[0] += card.counter
             
-            chk = tk.Checkbutton(
+            counter_label.config(text=f"Total Counter: +{total_counter[0]}")
+        
+        for card in counter_cards:
+            from src.models import Character, Event
+            card_text = f"{card.name}\n"
+            if isinstance(card, Character):
+                card_text += f"Power: {card.power}\n"
+            card_text += f"[Counter +{card.counter}]"
+            
+            btn = tk.Button(
                 card_frame,
-                text=f"{card.name}\nCounter: +{card.counter}",
-                variable=var,
+                text=card_text,
+                command=lambda c=card, b=None: toggle_card(c, card_buttons[c]),
                 font=('Arial', 10),
-                bg='#3a3a3a',
+                bg='#3a6a8a',
                 fg='#ffffff',
-                selectcolor='#4a7a4a',
-                activebackground='#4a4a4a',
-                activeforeground='#ffffff',
                 relief='raised',
-                bd=2,
-                padx=10,
-                pady=10
+                bd=3,
+                cursor='hand2',
+                width=15,
+                height=5
             )
-            chk.pack(side='left', padx=5)
+            btn.pack(side='left', padx=5)
+            if not 'card_buttons' in locals():
+                card_buttons = {}
+            card_buttons[card] = btn
         
         # Buttons frame
         btn_frame = tk.Frame(dialog, bg='#2b2b2b')
-        btn_frame.pack(pady=10)
+        btn_frame.pack(pady=15)
         
-        def confirm_counters():
-            for var, card in card_vars:
-                if var.get():
-                    selected_cards.append(card)
+        def finish_counters():
             dialog.destroy()
         
         tk.Button(
             btn_frame,
-            text="Use Selected Counters",
-            command=confirm_counters,
-            font=('Arial', 10, 'bold'),
+            text="✓ Finish (Use Selected Counters)",
+            command=finish_counters,
+            font=('Arial', 11, 'bold'),
             bg='#4a7a4a',
             fg='#ffffff',
             relief='raised',
-            bd=2,
+            bd=3,
             cursor='hand2',
-            padx=15,
-            pady=5
+            padx=20,
+            pady=10
         ).pack(side='left', padx=5)
         
         tk.Button(
             btn_frame,
-            text="Don't Counter",
-            command=dialog.destroy,
-            font=('Arial', 10),
+            text="✗ No Counter",
+            command=lambda: (selected_cards.clear(), dialog.destroy()),
+            font=('Arial', 11),
             bg='#666666',
             fg='#ffffff',
             relief='raised',
             bd=2,
             cursor='hand2',
-            padx=15,
-            pady=5
+            padx=20,
+            pady=10
         ).pack(side='left', padx=5)
         
         self.wait_window(dialog)
