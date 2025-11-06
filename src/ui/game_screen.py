@@ -59,13 +59,13 @@ class GameScreen(ttk.Frame):
         main_container = tk.Frame(self, bg='#2b2b2b')
         main_container.pack(expand=True, fill='both')
         
-        # Left side: Game Board
+        # Left side: Game Board (larger to accommodate cards)
         game_board = tk.Frame(main_container, bg='#2b2b2b')
-        game_board.pack(side='left', expand=True, fill='both', padx=10, pady=10)
+        game_board.pack(side='left', expand=True, fill='both', padx=5, pady=5)
         
-        # Right side: Action Panel
-        action_panel = tk.Frame(main_container, bg='#1e1e1e', width=300)
-        action_panel.pack(side='right', fill='y', padx=(0, 10), pady=10)
+        # Right side: Action Panel (slightly wider for better readability)
+        action_panel = tk.Frame(main_container, bg='#1e1e1e', width=320)
+        action_panel.pack(side='right', fill='y', padx=(0, 5), pady=5)
         action_panel.pack_propagate(False)
         
         # === TOP BAR (in game board) ===
@@ -119,10 +119,10 @@ class GameScreen(ttk.Frame):
         
         # === OPPONENT AREA (Top Half) ===
         opponent_area = tk.Frame(game_board, bg='#1e1e1e', relief='solid', bd=2)
-        opponent_area.pack(fill='both', expand=True, pady=(0, 5))
+        opponent_area.pack(fill='both', expand=True, pady=(0, 3))
         
         # Opponent header
-        opp_header = tk.Frame(opponent_area, bg='#3a3a3a', height=40)
+        opp_header = tk.Frame(opponent_area, bg='#3a3a3a', height=35)
         opp_header.pack(fill='x')
         opp_header.pack_propagate(False)
         
@@ -133,86 +133,97 @@ class GameScreen(ttk.Frame):
             fg='#ff6b6b',
             bg='#3a3a3a'
         )
-        self.opponent_name_label.pack(side='left', padx=10)
+        self.opponent_name_label.pack(side='left', padx=10, pady=5)
         
         # Opponent zones row
         opp_zones = tk.Frame(opponent_area, bg='#1e1e1e')
         opp_zones.pack(fill='both', expand=True, padx=5, pady=5)
         
-        # Left column: Deck, Trash, Life, Hand count
-        opp_left = tk.Frame(opp_zones, bg='#2a2a2a', width=120)
+        # Left column: Deck, Trash, Life, Hand count, DON
+        opp_left = tk.Frame(opp_zones, bg='#2a2a2a', width=140, relief='ridge', bd=1)
         opp_left.pack(side='left', fill='y', padx=(0, 5))
         opp_left.pack_propagate(False)
         
+        # Stats header
+        tk.Label(opp_left, text="═ STATS ═", font=('Arial', 9, 'bold'), fg='#ff6b6b', bg='#2a2a2a').pack(pady=(5, 3))
+        
         # Deck
-        tk.Label(opp_left, text="DECK", font=('Arial', 8), fg='#888', bg='#2a2a2a').pack(pady=2)
-        self.opp_deck_zone = tk.Frame(opp_left, bg='#3a3a4a', width=80, height=60, relief='sunken', bd=2)
-        self.opp_deck_zone.pack(pady=2)
-        self.opp_deck_zone.pack_propagate(False)
-        self.opp_deck_label = tk.Label(self.opp_deck_zone, text="🎴\n50", font=('Arial', 10), fg='#fff', bg='#3a3a4a')
-        self.opp_deck_label.pack(expand=True)
+        deck_frame = tk.Frame(opp_left, bg='#2a2a2a')
+        deck_frame.pack(fill='x', padx=5, pady=2)
+        tk.Label(deck_frame, text="Deck:", font=('Arial', 9, 'bold'), fg='#aaa', bg='#2a2a2a', width=6, anchor='w').pack(side='left')
+        self.opp_deck_label = tk.Label(deck_frame, text="🎴 50", font=('Arial', 9), fg='#fff', bg='#2a2a2a', anchor='w')
+        self.opp_deck_label.pack(side='left', fill='x', expand=True)
         
         # Trash
-        tk.Label(opp_left, text="TRASH", font=('Arial', 8), fg='#888', bg='#2a2a2a').pack(pady=2)
-        self.opp_trash_zone = tk.Frame(opp_left, bg='#4a3a3a', width=80, height=60, relief='sunken', bd=2)
-        self.opp_trash_zone.pack(pady=2)
-        self.opp_trash_zone.pack_propagate(False)
-        self.opp_trash_label = tk.Label(self.opp_trash_zone, text="🗑️\n0", font=('Arial', 10), fg='#fff', bg='#4a3a3a')
-        self.opp_trash_label.pack(expand=True)
+        trash_frame = tk.Frame(opp_left, bg='#2a2a2a')
+        trash_frame.pack(fill='x', padx=5, pady=2)
+        tk.Label(trash_frame, text="Trash:", font=('Arial', 9, 'bold'), fg='#aaa', bg='#2a2a2a', width=6, anchor='w').pack(side='left')
+        self.opp_trash_label = tk.Label(trash_frame, text="🗑️ 0", font=('Arial', 9), fg='#fff', bg='#2a2a2a', anchor='w')
+        self.opp_trash_label.pack(side='left', fill='x', expand=True)
         
         # Life
-        tk.Label(opp_left, text="LIFE", font=('Arial', 8), fg='#888', bg='#2a2a2a').pack(pady=2)
-        self.opponent_life_label = tk.Label(opp_left, text="❤❤❤❤❤", font=('Arial', 10), fg='#ff6b6b', bg='#2a2a2a')
-        self.opponent_life_label.pack(pady=2)
+        life_frame = tk.Frame(opp_left, bg='#2a2a2a')
+        life_frame.pack(fill='x', padx=5, pady=2)
+        tk.Label(life_frame, text="Life:", font=('Arial', 9, 'bold'), fg='#aaa', bg='#2a2a2a', width=6, anchor='w').pack(side='left')
+        self.opponent_life_label = tk.Label(life_frame, text="❤❤❤❤❤", font=('Arial', 9), fg='#ff6b6b', bg='#2a2a2a', anchor='w')
+        self.opponent_life_label.pack(side='left', fill='x', expand=True)
         
         # Hand count
-        tk.Label(opp_left, text="HAND", font=('Arial', 8), fg='#888', bg='#2a2a2a').pack(pady=2)
-        self.opponent_hand_label = tk.Label(opp_left, text="🎴 5", font=('Arial', 10), fg='#fff', bg='#2a2a2a')
-        self.opponent_hand_label.pack(pady=2)
+        hand_frame = tk.Frame(opp_left, bg='#2a2a2a')
+        hand_frame.pack(fill='x', padx=5, pady=2)
+        tk.Label(hand_frame, text="Hand:", font=('Arial', 9, 'bold'), fg='#aaa', bg='#2a2a2a', width=6, anchor='w').pack(side='left')
+        self.opponent_hand_label = tk.Label(hand_frame, text="🎴 5", font=('Arial', 9), fg='#fff', bg='#2a2a2a', anchor='w')
+        self.opponent_hand_label.pack(side='left', fill='x', expand=True)
         
         # DON
-        tk.Label(opp_left, text="DON", font=('Arial', 8), fg='#888', bg='#2a2a2a').pack(pady=2)
-        self.opponent_don_label = tk.Label(opp_left, text="⚡ 0/0", font=('Arial', 10), fg='#ffd700', bg='#2a2a2a')
-        self.opponent_don_label.pack(pady=2)
+        don_frame = tk.Frame(opp_left, bg='#2a2a2a')
+        don_frame.pack(fill='x', padx=5, pady=2)
+        tk.Label(don_frame, text="DON:", font=('Arial', 9, 'bold'), fg='#aaa', bg='#2a2a2a', width=6, anchor='w').pack(side='left')
+        self.opponent_don_label = tk.Label(don_frame, text="⚡ 0/0", font=('Arial', 9), fg='#ffd700', bg='#2a2a2a', anchor='w')
+        self.opponent_don_label.pack(side='left', fill='x', expand=True)
         
         # Center column: Leader and Field
         opp_center = tk.Frame(opp_zones, bg='#1e1e1e')
         opp_center.pack(side='left', fill='both', expand=True)
         
         # Leader zone
-        tk.Label(opp_center, text="LEADER", font=('Arial', 8), fg='#888', bg='#1e1e1e').pack(pady=2)
-        self.opp_leader_zone = tk.Frame(opp_center, bg='#4a4a6a', width=100, height=70, relief='raised', bd=3)
-        self.opp_leader_zone.pack(pady=2)
+        tk.Label(opp_center, text="═ LEADER ═", font=('Arial', 9, 'bold'), fg='#888', bg='#1e1e1e').pack(pady=(1, 0))
+        self.opp_leader_zone = tk.Frame(opp_center, bg='#4a4a6a', width=120, height=78, relief='raised', bd=3)
+        self.opp_leader_zone.pack(pady=1)
         self.opp_leader_zone.pack_propagate(False)
         self.opp_leader_label = tk.Label(
             self.opp_leader_zone,
-            text="Leader\n5000",
+            text="Leader\nPower: 5000",
             font=('Arial', 9, 'bold'),
             fg='#fff',
-            bg='#4a4a6a'
+            bg='#4a4a6a',
+            justify='center'
         )
         self.opp_leader_label.pack(expand=True)
         
         # Field (Characters)
-        tk.Label(opp_center, text="FIELD (Characters)", font=('Arial', 8), fg='#888', bg='#1e1e1e').pack(pady=1)
-        self.opponent_field_cards = tk.Frame(opp_center, bg='#1e1e1e', height=70)
+        tk.Label(opp_center, text="═ FIELD (Characters) ═", font=('Arial', 9, 'bold'), fg='#888', bg='#1e1e1e').pack(pady=(2, 0))
+        self.opponent_field_cards = tk.Frame(opp_center, bg='#1e1e1e', height=85)
         self.opponent_field_cards.pack(fill='x', pady=1)
+        self.opponent_field_cards.pack_propagate(False)
         
         # Stage zone
-        tk.Label(opp_center, text="STAGE", font=('Arial', 8), fg='#888', bg='#1e1e1e').pack(pady=1)
-        self.opp_stage_zone = tk.Frame(opp_center, bg='#1e1e1e', height=40)
+        tk.Label(opp_center, text="═ STAGE ═", font=('Arial', 8), fg='#888', bg='#1e1e1e').pack(pady=(2, 0))
+        self.opp_stage_zone = tk.Frame(opp_center, bg='#1e1e1e', height=28)
         self.opp_stage_zone.pack(fill='x', pady=1)
+        self.opp_stage_zone.pack_propagate(False)
         
         # === BATTLE INDICATOR (Between Opponent and Player) ===
-        battle_indicator_area = tk.Frame(game_board, bg='#1a1a1a', height=60)
-        battle_indicator_area.pack(fill='x', pady=2)
+        battle_indicator_area = tk.Frame(game_board, bg='#1a1a1a', height=50)
+        battle_indicator_area.pack(fill='x', pady=1)
         battle_indicator_area.pack_propagate(False)
         
         # Canvas for drawing battle arrow
         self.battle_canvas = tk.Canvas(
             battle_indicator_area,
             bg='#1a1a1a',
-            highlightthickness=0
+            highlightthickness=0,
+            height=50
         )
         self.battle_canvas.pack(fill='both', expand=True)
         
@@ -220,7 +231,7 @@ class GameScreen(ttk.Frame):
         self.battle_info_label = tk.Label(
             battle_indicator_area,
             text="",
-            font=('Arial', 12, 'bold'),
+            font=('Arial', 11, 'bold'),
             fg='#ff6b6b',
             bg='#1a1a1a'
         )
@@ -228,10 +239,10 @@ class GameScreen(ttk.Frame):
         
         # === PLAYER AREA (Bottom Half) ===
         player_area = tk.Frame(game_board, bg='#1e1e1e', relief='solid', bd=2)
-        player_area.pack(fill='both', expand=True, pady=(5, 0))
+        player_area.pack(fill='both', expand=True, pady=(3, 0))
         
         # Player header
-        player_header = tk.Frame(player_area, bg='#3a3a3a', height=40)
+        player_header = tk.Frame(player_area, bg='#3a3a3a', height=35)
         player_header.pack(fill='x')
         player_header.pack_propagate(False)
         
@@ -242,81 +253,89 @@ class GameScreen(ttk.Frame):
             fg='#4a9eff',
             bg='#3a3a3a'
         )
-        self.player_name_label.pack(side='left', padx=10)
+        self.player_name_label.pack(side='left', padx=10, pady=5)
         
         # Player zones row
         player_zones = tk.Frame(player_area, bg='#1e1e1e')
         player_zones.pack(fill='both', expand=True, padx=5, pady=5)
         
-        # Left column: Deck, Trash, Life
-        player_left = tk.Frame(player_zones, bg='#2a2a2a', width=120)
+        # Left column: Deck, Trash, Life, DON
+        player_left = tk.Frame(player_zones, bg='#2a2a2a', width=140, relief='ridge', bd=1)
         player_left.pack(side='left', fill='y', padx=(0, 5))
         player_left.pack_propagate(False)
         
+        # Stats header
+        tk.Label(player_left, text="═ STATS ═", font=('Arial', 9, 'bold'), fg='#4a9eff', bg='#2a2a2a').pack(pady=(5, 3))
+        
         # Deck
-        tk.Label(player_left, text="DECK", font=('Arial', 8), fg='#888', bg='#2a2a2a').pack(pady=2)
-        self.player_deck_zone = tk.Frame(player_left, bg='#3a3a4a', width=80, height=60, relief='sunken', bd=2)
-        self.player_deck_zone.pack(pady=2)
-        self.player_deck_zone.pack_propagate(False)
-        self.player_deck_label = tk.Label(self.player_deck_zone, text="🎴\n50", font=('Arial', 10), fg='#fff', bg='#3a3a4a')
-        self.player_deck_label.pack(expand=True)
+        deck_frame = tk.Frame(player_left, bg='#2a2a2a')
+        deck_frame.pack(fill='x', padx=5, pady=2)
+        tk.Label(deck_frame, text="Deck:", font=('Arial', 9, 'bold'), fg='#aaa', bg='#2a2a2a', width=6, anchor='w').pack(side='left')
+        self.player_deck_label = tk.Label(deck_frame, text="🎴 50", font=('Arial', 9), fg='#fff', bg='#2a2a2a', anchor='w')
+        self.player_deck_label.pack(side='left', fill='x', expand=True)
         
         # Trash
-        tk.Label(player_left, text="TRASH", font=('Arial', 8), fg='#888', bg='#2a2a2a').pack(pady=2)
-        self.player_trash_zone = tk.Frame(player_left, bg='#4a3a3a', width=80, height=60, relief='sunken', bd=2)
-        self.player_trash_zone.pack(pady=2)
-        self.player_trash_zone.pack_propagate(False)
-        self.player_trash_label = tk.Label(self.player_trash_zone, text="🗑️\n0", font=('Arial', 10), fg='#fff', bg='#4a3a3a')
-        self.player_trash_label.pack(expand=True)
+        trash_frame = tk.Frame(player_left, bg='#2a2a2a')
+        trash_frame.pack(fill='x', padx=5, pady=2)
+        tk.Label(trash_frame, text="Trash:", font=('Arial', 9, 'bold'), fg='#aaa', bg='#2a2a2a', width=6, anchor='w').pack(side='left')
+        self.player_trash_label = tk.Label(trash_frame, text="🗑️ 0", font=('Arial', 9), fg='#fff', bg='#2a2a2a', anchor='w')
+        self.player_trash_label.pack(side='left', fill='x', expand=True)
         
         # Life
-        tk.Label(player_left, text="LIFE", font=('Arial', 8), fg='#888', bg='#2a2a2a').pack(pady=2)
-        self.player_life_label = tk.Label(player_left, text="❤❤❤❤❤", font=('Arial', 10), fg='#4a9eff', bg='#2a2a2a')
-        self.player_life_label.pack(pady=2)
+        life_frame = tk.Frame(player_left, bg='#2a2a2a')
+        life_frame.pack(fill='x', padx=5, pady=2)
+        tk.Label(life_frame, text="Life:", font=('Arial', 9, 'bold'), fg='#aaa', bg='#2a2a2a', width=6, anchor='w').pack(side='left')
+        self.player_life_label = tk.Label(life_frame, text="❤❤❤❤❤", font=('Arial', 9), fg='#4a9eff', bg='#2a2a2a', anchor='w')
+        self.player_life_label.pack(side='left', fill='x', expand=True)
         
         # DON
-        tk.Label(player_left, text="DON", font=('Arial', 8), fg='#888', bg='#2a2a2a').pack(pady=2)
-        self.player_don_label = tk.Label(player_left, text="⚡ 0/0", font=('Arial', 10), fg='#ffd700', bg='#2a2a2a')
-        self.player_don_label.pack(pady=2)
+        don_frame = tk.Frame(player_left, bg='#2a2a2a')
+        don_frame.pack(fill='x', padx=5, pady=2)
+        tk.Label(don_frame, text="DON:", font=('Arial', 9, 'bold'), fg='#aaa', bg='#2a2a2a', width=6, anchor='w').pack(side='left')
+        self.player_don_label = tk.Label(don_frame, text="⚡ 0/0", font=('Arial', 9), fg='#ffd700', bg='#2a2a2a', anchor='w')
+        self.player_don_label.pack(side='left', fill='x', expand=True)
         
-        # Center column: Leader, Field, Hand
+        # Center column: Stage, Field, Leader, Hand, DON Pool
         player_center = tk.Frame(player_zones, bg='#1e1e1e')
         player_center.pack(side='left', fill='both', expand=True)
         
         # Stage zone
-        tk.Label(player_center, text="STAGE", font=('Arial', 8), fg='#888', bg='#1e1e1e').pack(pady=1)
-        self.player_stage_zone = tk.Frame(player_center, bg='#1e1e1e', height=40)
+        tk.Label(player_center, text="═ STAGE ═", font=('Arial', 8), fg='#888', bg='#1e1e1e').pack(pady=(0, 0))
+        self.player_stage_zone = tk.Frame(player_center, bg='#1e1e1e', height=28)
         self.player_stage_zone.pack(fill='x', pady=1)
+        self.player_stage_zone.pack_propagate(False)
         
         # Field (Characters)
-        tk.Label(player_center, text="FIELD (Characters)", font=('Arial', 8), fg='#888', bg='#1e1e1e').pack(pady=1)
-        self.player_field_cards = tk.Frame(player_center, bg='#1e1e1e', height=70)
+        tk.Label(player_center, text="═ FIELD (Characters) ═", font=('Arial', 9, 'bold'), fg='#888', bg='#1e1e1e').pack(pady=(2, 0))
+        self.player_field_cards = tk.Frame(player_center, bg='#1e1e1e', height=85)
         self.player_field_cards.pack(fill='x', pady=1)
+        self.player_field_cards.pack_propagate(False)
         
         # Leader zone
-        tk.Label(player_center, text="LEADER", font=('Arial', 8), fg='#888', bg='#1e1e1e').pack(pady=2)
-        self.player_leader_zone = tk.Frame(player_center, bg='#4a4a6a', width=100, height=70, relief='raised', bd=3)
-        self.player_leader_zone.pack(pady=2)
+        tk.Label(player_center, text="═ LEADER ═", font=('Arial', 9, 'bold'), fg='#888', bg='#1e1e1e').pack(pady=(2, 0))
+        self.player_leader_zone = tk.Frame(player_center, bg='#4a4a6a', width=120, height=78, relief='raised', bd=3)
+        self.player_leader_zone.pack(pady=1)
         self.player_leader_zone.pack_propagate(False)
         self.player_leader_label = tk.Label(
             self.player_leader_zone,
-            text="Leader\n5000",
+            text="Leader\nPower: 5000",
             font=('Arial', 9, 'bold'),
             fg='#fff',
-            bg='#4a4a6a'
+            bg='#4a4a6a',
+            justify='center'
         )
         self.player_leader_label.pack(expand=True)
         
         # Hand
-        tk.Label(player_center, text="YOUR HAND", font=('Arial', 8), fg='#888', bg='#1e1e1e').pack(pady=1)
+        tk.Label(player_center, text="═ YOUR HAND ═", font=('Arial', 9, 'bold'), fg='#888', bg='#1e1e1e').pack(pady=(2, 0))
         
         # Create a frame with horizontal scrollbar for hand
-        hand_container = tk.Frame(player_center, bg='#2a2a2a', height=120)
+        hand_container = tk.Frame(player_center, bg='#2a2a2a', height=115)
         hand_container.pack(fill='x', pady=1)
         hand_container.pack_propagate(False)
         
         # Canvas for scrolling
-        self.player_hand_canvas = tk.Canvas(hand_container, bg='#2a2a2a', height=120, highlightthickness=0)
+        self.player_hand_canvas = tk.Canvas(hand_container, bg='#2a2a2a', height=95, highlightthickness=0)
         self.player_hand_scrollbar = tk.Scrollbar(hand_container, orient='horizontal', command=self.player_hand_canvas.xview)
         self.player_hand_cards = tk.Frame(self.player_hand_canvas, bg='#2a2a2a')
         
@@ -331,9 +350,10 @@ class GameScreen(ttk.Frame):
         self.player_hand_cards.bind('<Configure>', lambda e: self.player_hand_canvas.configure(scrollregion=self.player_hand_canvas.bbox('all')))
         
         # DON Pool (Interactive)
-        tk.Label(player_center, text="DON POOL (Click to attach)", font=('Arial', 8), fg='#ffd700', bg='#1e1e1e').pack(pady=1)
-        self.player_don_pool_frame = tk.Frame(player_center, bg='#2a2a2a')
-        self.player_don_pool_frame.pack(fill='x', pady=1)
+        tk.Label(player_center, text="═ DON POOL (Click to attach) ═", font=('Arial', 8, 'bold'), fg='#ffd700', bg='#1e1e1e').pack(pady=(2, 0))
+        self.player_don_pool_frame = tk.Frame(player_center, bg='#2a2a2a', height=28)
+        self.player_don_pool_frame.pack(fill='x', pady=(1, 2))
+        self.player_don_pool_frame.pack_propagate(False)
         
         # === ACTION PANEL (Right Side) ===
         # Title
@@ -607,18 +627,18 @@ class GameScreen(ttk.Frame):
         player = state.player1
         life_hearts = "❤" * len(player.life_cards)
         self.player_life_label.config(text=life_hearts if life_hearts else "💀")
-        self.player_don_label.config(text=f"⚡ {player.active_don}/{player.don_pool}")
-        self.player_deck_label.config(text=f"🎴\n{len(player.deck)}")
-        self.player_trash_label.config(text=f"🗑️\n{len(player.trash)}")
+        self.player_don_label.config(text=f"{player.active_don}/{player.don_pool}")
+        self.player_deck_label.config(text=f"🎴 {len(player.deck)}")
+        self.player_trash_label.config(text=f"🗑️ {len(player.trash)}")
         
         # Update opponent info (player 2)
         opponent = state.player2
         opp_life_hearts = "❤" * len(opponent.life_cards)
         self.opponent_life_label.config(text=opp_life_hearts if opp_life_hearts else "💀")
-        self.opponent_don_label.config(text=f"⚡ {opponent.active_don}/{opponent.don_pool}")
+        self.opponent_don_label.config(text=f"{opponent.active_don}/{opponent.don_pool}")
         self.opponent_hand_label.config(text=f"🎴 {len(opponent.hand)}")
-        self.opp_deck_label.config(text=f"🎴\n{len(opponent.deck)}")
-        self.opp_trash_label.config(text=f"🗑️\n{len(opponent.trash)}")
+        self.opp_deck_label.config(text=f"🎴 {len(opponent.deck)}")
+        self.opp_trash_label.config(text=f"🗑️ {len(opponent.trash)}")
         
         # Update leaders
         if player.leader:
@@ -630,10 +650,12 @@ class GameScreen(ttk.Frame):
             if is_player_turn and attached_don > 0:
                 total_power += (attached_don * 1000)
             
-            leader_text = f"{player.leader.name}\n{total_power}"
+            # Build leader text with clear formatting
+            leader_text = f"{player.leader.name[:15]}\n"  # Truncate name
+            leader_text += f"⚔ PWR: {total_power}\n"
+            leader_text += f"{'💤 Rested' if is_rested else '⚡ Active'}"
             if attached_don > 0:
-                leader_text += f"\n⚡×{attached_don}"
-            leader_text += f"\n{'💤' if is_rested else '⚡'}"
+                leader_text += f"\n⚡×{attached_don} DON"
             
             self.player_leader_label.config(text=leader_text)
             
@@ -653,15 +675,18 @@ class GameScreen(ttk.Frame):
         if opponent.leader:
             # Calculate total power (base + DON bonuses only during opponent's turn)
             is_opponent_turn = self.game.state.active_player_id == opponent.player_id
+            is_opp_rested = opponent.leader_state.value == 'rested'
             attached_don = opponent.attached_don.get("leader", 0)
             total_power = opponent.leader.power
             if is_opponent_turn and attached_don > 0:
                 total_power += (attached_don * 1000)
             
-            leader_text = f"{opponent.leader.name}\n{total_power}"
+            # Build leader text with clear formatting
+            leader_text = f"{opponent.leader.name[:15]}\n"  # Truncate name
+            leader_text += f"⚔ PWR: {total_power}\n"
+            leader_text += f"{'💤 Rested' if is_opp_rested else '⚡ Active'}"
             if attached_don > 0:
-                leader_text += f"\n⚡×{attached_don}"
-            leader_text += f"\n{'💤' if opponent.leader_state.value == 'rested' else '⚡'}"
+                leader_text += f"\n⚡×{attached_don} DON"
             
             self.opp_leader_label.config(text=leader_text)
             
@@ -717,7 +742,9 @@ class GameScreen(ttk.Frame):
             is_rested = char_state.value == 'rested'
             state_icon = '💤' if is_rested else '⚡'
             
-            card_text = f"{char.name}\n{total_power} {state_icon}"
+            # Build card text with clear formatting
+            card_text = f"{char.name[:12]}\n"  # Truncate long names
+            card_text += f"PWR: {total_power} {state_icon}"
             if attached_don > 0:
                 card_text += f"\n⚡×{attached_don}"
             
@@ -726,9 +753,9 @@ class GameScreen(ttk.Frame):
             if has_blocker(char):
                 abilities.append("🛡️")
             if has_rush(char):
-                abilities.append("⚡Rush")
+                abilities.append("⚡")
             if abilities:
-                card_text += "\n" + " ".join(abilities)
+                card_text += "\n" + "".join(abilities)
             
             # Determine if card should be clickable and for what action
             clickable_for_don = self.don_attachment_mode
@@ -741,15 +768,17 @@ class GameScreen(ttk.Frame):
                 card_btn = tk.Button(
                     self.player_field_cards,
                     text=card_text,
-                    font=('Arial', 8),
+                    font=('Arial', 7),
                     fg='#ffffff',
                     bg='#5a5a2a',
                     activebackground='#6a6a3a',
                     relief='raised',
-                    bd=3,
-                    width=10,
-                    height=3,
+                    bd=2,
+                    width=12,
+                    height=4,
                     cursor='hand2',
+                    wraplength=80,
+                    justify='center',
                     command=lambda c=char: self.execute_don_attachment(c.id, is_leader=False)
                 )
                 card_btn.pack(side='left', padx=2)
@@ -758,15 +787,17 @@ class GameScreen(ttk.Frame):
                 card_btn = tk.Button(
                     self.player_field_cards,
                     text=card_text,
-                    font=('Arial', 8),
+                    font=('Arial', 7),
                     fg='#ffffff',
                     bg='#2a5a2a',
                     activebackground='#3a6a3a',
                     relief='raised',
-                    bd=3,
-                    width=10,
-                    height=3,
+                    bd=2,
+                    width=12,
+                    height=4,
                     cursor='hand2',
+                    wraplength=80,
+                    justify='center',
                     command=lambda c=char: self.select_attacker(c.id, is_leader=False)
                 )
                 card_btn.pack(side='left', padx=2)
@@ -775,13 +806,15 @@ class GameScreen(ttk.Frame):
                 card_label = tk.Label(
                     self.player_field_cards,
                     text=card_text,
-                    font=('Arial', 8),
+                    font=('Arial', 7),
                     fg='#ffffff',
                     bg='#4a4a4a',
                     relief='raised',
                     bd=2,
-                    width=10,
-                    height=3
+                    width=12,
+                    height=4,
+                    wraplength=80,
+                    justify='center'
                 )
                 card_label.pack(side='left', padx=2)
             else:
@@ -789,13 +822,15 @@ class GameScreen(ttk.Frame):
                 card_label = tk.Label(
                     self.player_field_cards,
                     text=card_text,
-                    font=('Arial', 8),
+                    font=('Arial', 7),
                     fg='#ffffff',
                     bg='#4a4a4a',
                     relief='raised',
                     bd=2,
-                    width=10,
-                    height=3
+                    width=12,
+                    height=4,
+                    wraplength=80,
+                    justify='center'
                 )
                 card_label.pack(side='left', padx=2)
         
@@ -817,7 +852,9 @@ class GameScreen(ttk.Frame):
             is_rested = char_state.value == 'rested'
             state_icon = '💤' if is_rested else '⚡'
             
-            card_text = f"{char.name}\n{total_power} {state_icon}"
+            # Build card text with clear formatting
+            card_text = f"{char.name[:12]}\n"  # Truncate long names
+            card_text += f"PWR: {total_power} {state_icon}"
             if attached_don > 0:
                 card_text += f"\n⚡×{attached_don}"
             
@@ -826,9 +863,9 @@ class GameScreen(ttk.Frame):
             if has_blocker(char):
                 abilities.append("🛡️")
             if has_rush(char):
-                abilities.append("⚡Rush")
+                abilities.append("⚡")
             if abilities:
-                card_text += "\n" + " ".join(abilities)
+                card_text += "\n" + "".join(abilities)
             
             # Make clickable if in attack mode and selecting target
             # Can only attack RESTED opponent characters
@@ -839,15 +876,17 @@ class GameScreen(ttk.Frame):
                 card_btn = tk.Button(
                     self.opponent_field_cards,
                     text=card_text,
-                    font=('Arial', 8),
+                    font=('Arial', 7),
                     fg='#ffffff',
                     bg='#5a2a2a',
                     activebackground='#6a3a3a',
                     relief='raised',
-                    bd=3,
-                    width=10,
-                    height=3,
+                    bd=2,
+                    width=12,
+                    height=4,
                     cursor='crosshair',
+                    wraplength=80,
+                    justify='center',
                     command=lambda c=char: self.execute_attack(c.id)
                 )
                 card_btn.pack(side='left', padx=2)
@@ -855,13 +894,15 @@ class GameScreen(ttk.Frame):
                 card_label = tk.Label(
                     self.opponent_field_cards,
                     text=card_text,
-                    font=('Arial', 8),
+                    font=('Arial', 7),
                     fg='#ffffff',
                     bg='#4a4a4a',
                     relief='raised',
                     bd=2,
-                    width=10,
-                    height=3
+                    width=12,
+                    height=4,
+                    wraplength=80,
+                    justify='center'
                 )
                 card_label.pack(side='left', padx=2)
     
@@ -877,45 +918,47 @@ class GameScreen(ttk.Frame):
             from src.models import Character, Event
             from src.engine.abilities import has_blocker, has_rush
             
-            # Build card text with abilities
-            card_text = f"{card.name}\nCost: {card.cost}"
+            # Build card text with clear labels
+            card_text = f"{card.name[:14]}\n"  # Truncate name
+            card_text += f"💰 Cost: {card.cost}"
             
             if isinstance(card, Character):
-                card_text += f"\nPower: {card.power}"
+                card_text += f"\n⚔ Power: {card.power}"
                 
-                # Show abilities
-                abilities = []
+                # Show abilities on separate lines
                 if has_blocker(card):
-                    abilities.append("🛡️Blocker")
+                    card_text += "\n🛡️ Blocker"
                 if has_rush(card):
-                    abilities.append("⚡Rush")
+                    card_text += "\n⚡ Rush"
                 if card.counter > 0:
-                    abilities.append(f"[Counter +{card.counter}]")
-                
-                if abilities:
-                    card_text += "\n" + " ".join(abilities)
+                    card_text += f"\n🔄 Cntr +{card.counter}"
                     
             elif isinstance(card, Event):
                 # Show counter value for events
                 if hasattr(card, 'counter') and card.counter > 0:
-                    card_text += f"\n[Counter +{card.counter}]"
+                    card_text += f"\n🔄 Counter +{card.counter}"
                 # Show if it's main phase playable
                 if hasattr(card, 'effect_text'):
                     if "[Main]" in card.effect_text:
-                        card_text += "\n[Main Phase]"
+                        card_text += "\n[Main]"
             
             card_btn = tk.Button(
                 self.player_hand_cards,
                 text=card_text,
-                font=('Arial', 8),
+                font=('Arial', 7),
                 fg='#ffffff',
                 bg='#3a6a8a',
                 activebackground='#4a7a9a',
                 relief='raised',
                 bd=2,
-                width=16,
-                height=7,
+                width=13,
+                height=6,
                 cursor='hand2',
+                wraplength=85,
+                justify='left',
+                anchor='nw',
+                padx=3,
+                pady=2,
                 command=lambda c=card: self.play_card(c)
             )
             card_btn.pack(side='left', padx=2)
