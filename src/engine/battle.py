@@ -231,20 +231,30 @@ def apply_counter(game: GameState, battle: Battle, counter_card: Event, target_i
     
     # Remove counter card from hand and put in trash
     if counter_card not in defender.hand:
+        print(f"[Battle] ERROR: Counter card {counter_card.name} not found in defender's hand!")
+        print(f"[Battle] Defender hand has {len(defender.hand)} cards")
         raise ValueError("Counter card not in hand")
     
+    print(f"[Battle] Removing {counter_card.name} from defender's hand and trashing it")
     defender.hand.remove(counter_card)
     defender.trash.append(counter_card)
     battle.counters_played.append(counter_card)
     
-    print(f"[Battle] Counter card played: {counter_card.name} (Counter: {counter_card.counter if hasattr(counter_card, 'counter') else 0})")
+    # Get counter value
+    counter_value = 0
+    if hasattr(counter_card, 'counter'):
+        counter_value = counter_card.counter
+    else:
+        from src.engine.abilities import get_counter_value
+        parsed = get_counter_value(counter_card)
+        counter_value = parsed if parsed is not None else 0
     
-    # Parse counter effect (simplified - in real implementation, parse from effect_text)
-    # For now, assume counter value equals the card's counter attribute
-    if hasattr(counter_card, 'counter') and counter_card.counter > 0:
-        # Add counter value to defender's power
-        battle.add_power_modification(f"counter_{counter_card.name}", counter_card.counter)
-        print(f"[Battle] Counter added {counter_card.counter} to defender power. New defender power: {battle.defender_power}")
+    print(f"[Battle] Counter card played: {counter_card.name} (Counter: {counter_value})")
+    
+    # Add counter value to defender's power
+    if counter_value > 0:
+        battle.add_power_modification(f"counter_{counter_card.name}", counter_value)
+        print(f"[Battle] Counter added {counter_value} to defender power. New defender power: {battle.defender_power}")
 
 
 def resolve_battle(game: GameState, battle: Battle) -> str:
@@ -275,9 +285,12 @@ def resolve_battle(game: GameState, battle: Battle) -> str:
     final_attacker_power = battle.get_final_attacker_power()
     final_defender_power = battle.get_final_defender_power()
     
-    # Compare power
+    print(f"[Battle] RESOLUTION: Attacker final power: {final_attacker_power}, Defender final power: {final_defender_power}")
+    
+    # Compare power (defender must be STRICTLY GREATER to succeed)
     if final_attacker_power >= final_defender_power:
         # Attack succeeds
+        print(f"[Battle] Attack SUCCEEDS (attacker >= defender)")
         battle.result = "attack_success"
         
         if battle.target_is_leader:
@@ -312,6 +325,7 @@ def resolve_battle(game: GameState, battle: Battle) -> str:
                 battle.damage_dealt = 1
     else:
         # Defense succeeds - nothing happens
+        print(f"[Battle] Defense SUCCEEDS (defender > attacker)")
         battle.result = "defense_success"
     
     # Rest the attacker (attacking always rests the character)

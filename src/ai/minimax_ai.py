@@ -461,6 +461,11 @@ class MinimaxAI:
                 counters.append(card)
         
         print(f"[MinimaxAI] Defensive counters check: {len(counters)} counters available in hand of {len(player.hand)} cards")
+        if counters:
+            print(f"[MinimaxAI] Available counter cards from HAND:")
+            for card in counters[:5]:  # Show first 5
+                cv = card.counter if hasattr(card, 'counter') else 0
+                print(f"  - {card.name} (Counter: {cv})")
         
         # Use one counter (can improve this logic)
         if counters:

@@ -353,36 +353,41 @@ class MCTSAI:
                 available_counters.append((card, counter_value))
         
         print(f"[MCTSAI] Defensive counters check: {len(available_counters)} counters available in hand of {len(player.hand)} cards")
+        if available_counters:
+            print(f"[MCTSAI] Available counter cards from HAND:")
+            for card, value in available_counters[:5]:  # Show first 5
+                print(f"  - {card.name} (Counter: {value})")
         
         if not available_counters:
             return []
         
         # Simple heuristic: counter if it would save us from taking damage
-        # Calculate damage deficit
+        # Calculate damage deficit (need to be ABOVE attacker power to defend successfully)
         defender_power = battle.defender_power
         damage_difference = battle.attacker_power - defender_power
         
         print(f"[MCTSAI] Attacker power: {battle.attacker_power}, Defender power: {defender_power}, Difference: {damage_difference}")
         
-        # If we're already winning the battle, don't counter
-        if damage_difference <= 0:
-            print(f"[MCTSAI] Already winning battle, not countering")
+        # If we're already winning the battle (defender power > attacker power), don't counter
+        if damage_difference < 0:
+            print(f"[MCTSAI] Already winning battle (defender power > attacker), not countering")
             return []
         
-        # Use counters to close the gap (but don't waste too many)
+        # Use counters to get defender power ABOVE attacker power (not just equal)
         counters_to_play = []
-        remaining_difference = damage_difference
+        remaining_difference = damage_difference + 1  # Need to exceed by at least 1
         
         for card, counter_value in sorted(available_counters, key=lambda x: x[1]):
             if remaining_difference > 0:
                 counters_to_play.append(card)
                 remaining_difference -= counter_value
+                print(f"[MCTSAI] Adding counter: {card.name} (+{counter_value}), remaining deficit: {remaining_difference}")
                 
-                # Stop if we've equalized or exceeded
+                # Stop if we've exceeded attacker power (not just equaled)
                 if remaining_difference <= 0:
                     break
         
-        print(f"[MCTSAI] Playing {len(counters_to_play)} counter cards to close gap")
+        print(f"[MCTSAI] Playing {len(counters_to_play)} counter cards to exceed attacker power")
         return counters_to_play
 
 

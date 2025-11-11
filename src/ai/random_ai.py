@@ -197,6 +197,11 @@ class RandomAI:
                 available_counters.append(card)
         
         print(f"[RandomAI] Defensive counters check: {len(available_counters)} counters available in hand of {len(player.hand)} cards")
+        if available_counters:
+            print(f"[RandomAI] Available counter cards from HAND:")
+            for card in available_counters[:5]:  # Show first 5
+                cv = card.counter if hasattr(card, 'counter') else 0
+                print(f"  - {card.name} (Counter: {cv})")
         
         # If no counters available, can't counter
         if not available_counters:
