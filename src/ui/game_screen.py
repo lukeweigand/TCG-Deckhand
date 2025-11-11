@@ -4,7 +4,7 @@ This is where the actual game is played.
 """
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from src.engine.game import Game, GameConfig
 from src.engine.game_init import initialize_game
 from src.engine.game_state import CardState
@@ -481,22 +481,60 @@ class GameScreen(ttk.Frame):
         
         tk.Label(
             status_frame,
-            text="Game Log",
+            text="Action Log",
             font=('Arial', 9, 'bold'),
             fg='#888',
             bg='#1a1a1a'
         ).pack(pady=2)
         
+        # Scrollable text widget for action log
+        log_container = tk.Frame(status_frame, bg='#1a1a1a')
+        log_container.pack(fill='both', expand=True, padx=5, pady=5)
+        
+        log_scrollbar = tk.Scrollbar(log_container)
+        log_scrollbar.pack(side='right', fill='y')
+        
+        self.action_log = tk.Text(
+            log_container,
+            font=('Consolas', 8),
+            fg='#a0a0a0',
+            bg='#0a0a0a',
+            wrap='word',
+            height=10,
+            yscrollcommand=log_scrollbar.set,
+            state='disabled',  # Read-only
+            relief='flat'
+        )
+        self.action_log.pack(side='left', fill='both', expand=True)
+        log_scrollbar.config(command=self.action_log.yview)
+        
+        # Keep single-line status label for immediate feedback (below log)
         self.status_label = tk.Label(
             status_frame,
             text="Initializing game...",
-            font=('Arial', 8),
-            fg='#a0a0a0',
+            font=('Arial', 8, 'bold'),
+            fg='#4a9eff',
             bg='#1a1a1a',
             wraplength=250,
             justify='left'
         )
-        self.status_label.pack(fill='both', expand=True, padx=5, pady=5)
+        self.status_label.pack(fill='x', padx=5, pady=(5, 2))
+    
+    def log_action(self, message):
+        """Add an action message to the action log.
+        
+        Args:
+            message: Action description to log
+        """
+        self.action_log.config(state='normal')
+        
+        # Add timestamp with turn number
+        turn = self.game.state.current_turn if self.game and self.game.state else 1
+        timestamp = f"[Turn {turn}] "
+        
+        self.action_log.insert('end', timestamp + message + '\n')
+        self.action_log.see('end')  # Auto-scroll to bottom
+        self.action_log.config(state='disabled')
     
     def initialize_game(self):
         """Initialize a new game with the selected difficulty."""
@@ -704,8 +742,8 @@ class GameScreen(ttk.Frame):
         self.update_hand_display()
         self.update_don_pool_display()
         
-        # Update win bar
-        self.update_win_bar(50.0)
+        # Update win advantage bar with real-time calculation
+        self.calculate_and_update_win_advantage()
         
         # Enable/disable buttons based on whose turn it is
         is_player_turn = state.active_player_id == state.player1.player_id
@@ -976,7 +1014,15 @@ class GameScreen(ttk.Frame):
         try:
             from src.engine.actions import PlayCardAction, ActionType
             from src.models import Character
-            import tkinter.messagebox as messagebox
+            
+            # Confirmation dialog
+            confirm = messagebox.askyesno(
+                "Play Card",
+                f"Play {card.name}?\n\nCost: {card.cost} DON\nPower: {card.power if hasattr(card, 'power') else 'N/A'}"
+            )
+            if not confirm:
+                self.status_label.config(text="Cancelled")
+                return
             
             player = self.game.state.player1
             
@@ -1014,6 +1060,8 @@ class GameScreen(ttk.Frame):
             success = self.game.execute_action(action)
             
             if success:
+                power_text = f", Power: {card.power}" if hasattr(card, 'power') else ""
+                self.log_action(f"YOU played {card.name} (Cost: {card.cost}{power_text})")
                 self.status_label.config(text=f"Played {card.name}!")
                 self.update_display()
             else:
@@ -1376,6 +1424,22 @@ class GameScreen(ttk.Frame):
             # Get the active player (whoever's turn it is)
             active_player = self.game.state.get_active_player()
             
+            # Get target name for confirmation
+            if is_leader:
+                target_name = "Leader"
+            else:
+                target_card = next((c for c in active_player.characters if c.id == target_id), None)
+                target_name = target_card.name if target_card else target_id[:8]
+            
+            # Confirmation dialog
+            confirm = messagebox.askyesno(
+                "Attach DON",
+                f"Attach 1 DON to {target_name}?"
+            )
+            if not confirm:
+                self.status_label.config(text="Cancelled")
+                return
+            
             print(f"\n=== DON ATTACHMENT DEBUG ===")
             print(f"Target ID: {target_id}")
             print(f"Is Leader: {is_leader}")
@@ -1401,7 +1465,7 @@ class GameScreen(ttk.Frame):
             print(f"=== END DEBUG ===\n")
             
             if success:
-                target_name = "Leader" if is_leader else target_id[:8]
+                self.log_action(f"YOU attached 1 DON to {target_name}")
                 self.status_label.config(text=f"✅ Attached 1 DON to {target_name}!")
                 self.don_attachment_mode = False
                 self.update_display()
@@ -1443,6 +1507,25 @@ class GameScreen(ttk.Frame):
         # Update percentage label
         self.win_percent_label.config(text=f"{win_percent:.1f}%")
     
+    def calculate_and_update_win_advantage(self):
+        """Calculate current win advantage and update display."""
+        if not self.game or not self.game.state:
+            return
+        
+        try:
+            from src.analysis.win_advantage import calculate_win_advantage
+            
+            # Calculate win advantage for player 1 (human player)
+            result = calculate_win_advantage(self.game.state, "1")
+            
+            # Update the win bar
+            self.update_win_bar(result['win_probability'])
+            
+        except Exception as e:
+            print(f"[Win Advantage] Error calculating: {e}")
+            # Default to 50% on error
+            self.update_win_bar(50.0)
+    
     def end_turn(self):
         """End the current turn and pass to AI."""
         try:
@@ -1453,6 +1536,16 @@ class GameScreen(ttk.Frame):
                 self.status_label.config(text="Not your turn!")
                 return
             
+            # Confirmation dialog
+            confirm = messagebox.askyesno(
+                "End Turn",
+                "End your turn and pass to opponent?"
+            )
+            if not confirm:
+                self.status_label.config(text="Cancelled")
+                return
+            
+            self.log_action("YOU ended turn")
             self.status_label.config(text="Ending turn...")
             self.update()
             
@@ -1461,6 +1554,7 @@ class GameScreen(ttk.Frame):
             self.game.state.current_turn += 1
             
             # Start opponent's turn with automatic phases
+            self.log_action("--- OPPONENT'S TURN ---")
             self.status_label.config(text="Opponent's turn - REFRESH phase")
             self.start_turn_phases(is_player=False)
             
@@ -1594,6 +1688,19 @@ class GameScreen(ttk.Frame):
                 # Execute AI action
                 success = self.game.execute_action(action)
                 if success:
+                    # Log AI action based on type
+                    from src.engine.actions import ActionType
+                    if action.action_type == ActionType.PLAY_CARD:
+                        card_name = action.card.name if hasattr(action, 'card') and action.card else "Unknown"
+                        power = f", Power: {action.card.power}" if hasattr(action, 'card') and hasattr(action.card, 'power') else ""
+                        self.log_action(f"AI played {card_name} (Cost: {action.card.cost if hasattr(action, 'card') else '?'}{power})")
+                    elif action.action_type == ActionType.ATTACH_DON:
+                        self.log_action(f"AI attached 1 DON")
+                    elif action.action_type == ActionType.ATTACK:
+                        self.log_action(f"AI attacked (see console for details)")
+                    else:
+                        self.log_action(f"AI: {action.action_type.value}")
+                    
                     self.status_label.config(text=f"AI: {action.action_type.value}")
                     self.update_display()
                     self.update()
@@ -1625,14 +1732,165 @@ class GameScreen(ttk.Frame):
             self.status_label.config(text="Your turn!")
     
     def suggest_move(self):
-        """Show best move suggestion."""
-        self.status_label.config(text="💡 Best move suggestion coming in Phase 5.4!")
-        # TODO: Implement best move suggestion UI
+        """Show best move suggestion using the AI analysis system."""
+        if not self.game or not self.game.state:
+            return
+        
+        # Check if it's player's turn
+        if self.game.state.active_player_id != self.game.state.player1.player_id:
+            self.status_label.config(text="Not your turn!")
+            return
+        
+        try:
+            from src.analysis.best_move import suggest_best_moves
+            
+            self.status_label.config(text="💡 Analyzing best moves...")
+            self.update()
+            
+            # Get top 3 move suggestions
+            suggestions = suggest_best_moves(self.game, "1", count=3)
+            
+            if not suggestions:
+                messagebox.showinfo(
+                    "Best Move",
+                    "No moves available (you may need to pass phase or end turn).",
+                    parent=self
+                )
+                return
+            
+            # Build message showing all suggestions
+            msg = "💡 BEST MOVE SUGGESTIONS\n\n"
+            
+            for i, move in enumerate(suggestions, 1):
+                msg += f"#{i} - {move['description']}\n"
+                msg += f"   Win Δ: {move['delta_win_advantage']:+.1f}%\n"
+                msg += f"   Risk: {move['risk_level']}\n"
+                msg += f"   {move['explanation']}\n\n"
+            
+            messagebox.showinfo(
+                "Best Move Suggestions",
+                msg,
+                parent=self
+            )
+            
+            self.status_label.config(text="💡 Best moves displayed!")
+            
+        except Exception as e:
+            self.status_label.config(text=f"Error analyzing moves: {str(e)}")
+            import traceback
+            traceback.print_exc()
     
     def show_insights(self):
-        """Show strategic insights."""
-        self.status_label.config(text="🎯 Strategic insights coming in Phase 5.4!")
-        # TODO: Implement strategic insights UI
+        """Show strategic insights about current position."""
+        if not self.game or not self.game.state:
+            return
+        
+        try:
+            from src.analysis.strategic_insights import analyze_position
+            
+            self.status_label.config(text="🎯 Analyzing position...")
+            self.update()
+            
+            # Get insights for player 1
+            insights = analyze_position(self.game.state, "1")
+            
+            if not insights:
+                messagebox.showinfo(
+                    "Strategic Insights",
+                    "No specific insights for current position.",
+                    parent=self
+                )
+                return
+            
+            # Group insights by severity
+            threats_high = [i for i in insights if i.category == "threat" and i.severity == "HIGH"]
+            threats_med = [i for i in insights if i.category == "threat" and i.severity == "MEDIUM"]
+            opportunities = [i for i in insights if i.category == "opportunity"]
+            material = [i for i in insights if i.category == "material"]
+            tempo = [i for i in insights if i.category == "tempo"]
+            
+            # Build message
+            msg = "🎯 STRATEGIC INSIGHTS\n\n"
+            
+            if threats_high:
+                msg += "⚠️ HIGH THREATS:\n"
+                for insight in threats_high:
+                    msg += f"   • {insight.message}\n"
+                msg += "\n"
+            
+            if threats_med:
+                msg += "⚡ MEDIUM THREATS:\n"
+                for insight in threats_med:
+                    msg += f"   • {insight.message}\n"
+                msg += "\n"
+            
+            if opportunities:
+                msg += "✨ OPPORTUNITIES:\n"
+                for insight in opportunities:
+                    msg += f"   • {insight.message}\n"
+                msg += "\n"
+            
+            if material:
+                msg += "📊 MATERIAL:\n"
+                for insight in material:
+                    msg += f"   • {insight.message}\n"
+                msg += "\n"
+            
+            if tempo:
+                msg += "⏱️ TEMPO:\n"
+                for insight in tempo:
+                    msg += f"   • {insight.message}\n"
+            
+            # Show in a scrollable dialog
+            dialog = tk.Toplevel(self)
+            dialog.title("Strategic Insights")
+            dialog.geometry("500x600")
+            dialog.configure(bg='#2b2b2b')
+            dialog.transient(self)
+            
+            # Scrollable text widget
+            scroll_frame = tk.Frame(dialog, bg='#2b2b2b')
+            scroll_frame.pack(fill='both', expand=True, padx=10, pady=10)
+            
+            scrollbar = tk.Scrollbar(scroll_frame)
+            scrollbar.pack(side='right', fill='y')
+            
+            text_widget = tk.Text(
+                scroll_frame,
+                font=('Arial', 10),
+                fg='#ffffff',
+                bg='#1a1a1a',
+                wrap='word',
+                yscrollcommand=scrollbar.set,
+                relief='flat',
+                padx=10,
+                pady=10
+            )
+            text_widget.pack(side='left', fill='both', expand=True)
+            scrollbar.config(command=text_widget.yview)
+            
+            text_widget.insert('1.0', msg)
+            text_widget.config(state='disabled')
+            
+            # Close button
+            close_btn = tk.Button(
+                dialog,
+                text="Close",
+                command=dialog.destroy,
+                font=('Arial', 10, 'bold'),
+                bg='#4a9eff',
+                fg='#ffffff',
+                padx=20,
+                pady=5
+            )
+            close_btn.pack(pady=10)
+            
+            self.status_label.config(text="🎯 Insights displayed!")
+            
+        except Exception as e:
+            self.status_label.config(text=f"Error analyzing position: {str(e)}")
+            import traceback
+            traceback.print_exc()
     
     def show_menu(self):
         """Show in-game menu (pause menu)."""
@@ -1702,6 +1960,19 @@ class GameScreen(ttk.Frame):
         try:
             from src.engine.actions import AttackAction, ActionType
             
+            # Get attacker and target names for confirmation
+            attacker_name = "Leader" if self.is_leader_attacker else self.selected_attacker[:8]
+            target_name = "Leader" if target_id == "leader" else target_id[:8]
+            
+            # Confirmation dialog
+            confirm = messagebox.askyesno(
+                "Declare Attack",
+                f"Attack with {attacker_name}?\n\nTarget: Opponent's {target_name}"
+            )
+            if not confirm:
+                self.status_label.config(text="Attack cancelled")
+                return
+            
             # Create attack action
             action = AttackAction(
                 player_id=self.game.state.player1.player_id,
@@ -1710,10 +1981,6 @@ class GameScreen(ttk.Frame):
                 target_id=target_id,
                 is_leader_attack=self.is_leader_attacker
             )
-            
-            # Get attacker and target names
-            attacker_name = "Leader" if self.is_leader_attacker else self.selected_attacker[:8]
-            target_name = "Leader" if target_id == "leader" else target_id[:8]
             
             # Show battle indicator
             self.show_battle_indicator(
@@ -1729,6 +1996,10 @@ class GameScreen(ttk.Frame):
             
             # Execute attack (this handles blocker/counter prompts internally for AI)
             success = self.game.execute_action(action)
+            
+            # Log the attack
+            if success:
+                self.log_action(f"YOU attacked with {attacker_name} → {target_name}")
             
             # Clear battle indicator after attack resolves
             self.clear_battle_indicator()

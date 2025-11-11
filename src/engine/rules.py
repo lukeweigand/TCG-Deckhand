@@ -109,6 +109,10 @@ def _validate_attack(game: GameState, action: AttackAction) -> tuple[bool, Optio
     # Validate attacker
     if action.is_leader_attack:
         # Leaders can attack
+        # Check if leader is already rested
+        if attacker.leader_state == CardState.RESTED:
+            return (False, "Leader is already rested (can only attack once per turn)")
+        
         # Check if leader has summoning sickness (first turn)
         if attacker.first_turn:
             return (False, "Cannot attack on your first turn")

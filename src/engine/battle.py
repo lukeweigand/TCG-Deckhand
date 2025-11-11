@@ -328,10 +328,10 @@ def resolve_battle(game: GameState, battle: Battle) -> str:
         print(f"[Battle] Defense SUCCEEDS (defender > attacker)")
         battle.result = "defense_success"
     
-    # Rest the attacker (attacking always rests the character)
+    # Rest the attacker (attacking always rests the character/leader)
     if battle.attacker_is_leader:
-        # Leaders can't be rested in One Piece TCG typically
-        pass
+        # Leaders DO get rested when attacking (they can attack once per turn)
+        attacker.leader_state = CardState.RESTED
     else:
         attacker.character_states[battle.attacker_id] = CardState.RESTED
     
