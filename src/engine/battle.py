@@ -253,8 +253,8 @@ def apply_counter(game: GameState, battle: Battle, counter_card: Event, target_i
     
     # Add counter value to defender's power
     if counter_value > 0:
-        battle.add_power_modification(f"counter_{counter_card.name}", counter_value)
-        print(f"[Battle] Counter added {counter_value} to defender power. New defender power: {battle.defender_power}")
+        battle.add_power_modification(f"defender_counter_{counter_card.name}", counter_value)
+        print(f"[Battle] Counter added {counter_value} to defender power. New defender power: {battle.get_final_defender_power()}")
 
 
 def resolve_battle(game: GameState, battle: Battle) -> str:
