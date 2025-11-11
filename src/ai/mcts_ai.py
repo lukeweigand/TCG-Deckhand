@@ -337,15 +337,22 @@ class MCTSAI:
         defender_id = self.player_id
         player = game_state.player1 if game_state.player1.player_id == defender_id else game_state.player2
         
-        # Find counter cards in hand
+        # Find counter cards in hand (both Characters and Events can have counter values)
         available_counters = []
         for card in player.hand:
-            if isinstance(card, Event):
-                counter_value = get_counter_value(card)
-                if counter_value > 0:
-                    available_counters.append((card, counter_value))
+            # In One Piece TCG, both Character and Event cards can be played as counters
+            # Characters have a counter attribute, Events have it in effect_text
+            counter_value = 0
+            if hasattr(card, 'counter'):
+                counter_value = card.counter
+            else:
+                parsed_value = get_counter_value(card)
+                counter_value = parsed_value if parsed_value is not None else 0
+            
+            if counter_value > 0:
+                available_counters.append((card, counter_value))
         
-        print(f"[MCTSAI] Defensive counters check: {len(available_counters)} counters available")
+        print(f"[MCTSAI] Defensive counters check: {len(available_counters)} counters available in hand of {len(player.hand)} cards")
         
         if not available_counters:
             return []

@@ -445,13 +445,22 @@ class MinimaxAI:
         
         player = game_state.player1 if game_state.player1.player_id == self.player_id else game_state.player2
         
-        # Find counter cards
+        # Find counter cards (both Characters and Events can have counter values)
         counters = []
         for card in player.hand:
-            if isinstance(card, Event) and get_counter_value(card) > 0:
+            # In One Piece TCG, both Character and Event cards can be played as counters
+            # Characters have a counter attribute, Events have it in effect_text
+            counter_value = 0
+            if hasattr(card, 'counter'):
+                counter_value = card.counter
+            else:
+                parsed_value = get_counter_value(card)
+                counter_value = parsed_value if parsed_value is not None else 0
+            
+            if counter_value > 0:
                 counters.append(card)
         
-        print(f"[MinimaxAI] Defensive counters check: {len(counters)} counters available")
+        print(f"[MinimaxAI] Defensive counters check: {len(counters)} counters available in hand of {len(player.hand)} cards")
         
         # Use one counter (can improve this logic)
         if counters:
