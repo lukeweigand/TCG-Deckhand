@@ -606,6 +606,9 @@ class GameScreen(ttk.Frame):
             
             self.game = Game(config, human_player, ai)
             
+            # Set battle log callback so we can see defensive actions in the action log
+            self.game.battle_log_callback = self.log_action
+            
             # Initialize game state
             self.status_label.config(text="Setting up game board...")
             self.update()

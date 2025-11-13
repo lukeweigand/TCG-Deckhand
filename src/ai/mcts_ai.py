@@ -361,7 +361,6 @@ class MCTSAI:
         if not available_counters:
             return []
         
-        # Simple heuristic: counter if it would save us from taking damage
         # Calculate damage deficit (need to be ABOVE attacker power to defend successfully)
         defender_power = battle.defender_power
         damage_difference = battle.attacker_power - defender_power
@@ -372,6 +371,37 @@ class MCTSAI:
         if damage_difference < 0:
             print(f"[MCTSAI] Already winning battle (defender power > attacker), not countering")
             return []
+        
+        # COST-BENEFIT ANALYSIS: Only counter if it's worth it
+        # Priority 1: Always defend the leader (losing life cards is critical)
+        # Priority 2: Defend characters only if counter cost is reasonable
+        
+        if battle.target_is_leader:
+            # Always try to defend the leader - life cards are precious
+            print(f"[MCTSAI] Defending LEADER - will use counters")
+        else:
+            # Defending a character (or blocker) - check if it's worth it
+            # Rule: Don't spend more counter value than the defender is worth
+            # Calculate minimum counter value needed
+            counters_needed = damage_difference + 1  # Need to exceed by at least 1
+            
+            # Estimate what it would cost (use smallest counters first)
+            sorted_counters = sorted(available_counters, key=lambda x: x[1])
+            total_counter_value = 0
+            cards_needed = 0
+            for card, counter_value in sorted_counters:
+                if total_counter_value < counters_needed:
+                    total_counter_value += counter_value
+                    cards_needed += 1
+            
+            # Compare cost vs value of what we're defending
+            # If we need to spend more than 2x the defender's power, let it go
+            if total_counter_value > (defender_power * 2):
+                print(f"[MCTSAI] NOT WORTH IT: Would spend {total_counter_value} counter value to save {defender_power} power character")
+                print(f"[MCTSAI] Letting defender take the hit")
+                return []
+            
+            print(f"[MCTSAI] Defending character worth it: spending {total_counter_value} to save {defender_power}")
         
         # Use counters to get defender power ABOVE attacker power (not just equal)
         counters_to_play = []

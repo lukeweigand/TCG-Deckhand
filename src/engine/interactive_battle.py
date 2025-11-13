@@ -54,7 +54,8 @@ class InteractiveBattle:
         attacker_id: str,
         target_id: str,
         is_leader_attack: bool,
-        defender_player
+        defender_player,
+        log_callback=None
     ):
         """
         Initialize an interactive battle.
@@ -65,6 +66,7 @@ class InteractiveBattle:
             target_id: ID of target being attacked
             is_leader_attack: True if leader is attacking
             defender_player: Player object (implements Player protocol) for defender
+            log_callback: Optional function(message: str) to log battle events
         """
         self.game = game
         self.attacker_id = attacker_id
@@ -72,6 +74,12 @@ class InteractiveBattle:
         self.is_leader_attack = is_leader_attack
         self.defender_player = defender_player
         self.battle: Optional[Battle] = None
+        self.log_callback = log_callback
+        
+    def _log(self, message: str):
+        """Log a battle event if callback is provided."""
+        if self.log_callback:
+            self.log_callback(message)
     
     def execute(self) -> Battle:
         """
@@ -91,17 +99,39 @@ class InteractiveBattle:
         # Phase 2: Ask defender for blocker
         blocker_id = self._get_blocker_response()
         if blocker_id:
+            # Find blocker character for logging
+            defender = self.game.get_opponent()
+            blocker_char = next((c for c in defender.characters if c.id == blocker_id), None)
+            if blocker_char:
+                self._log(f"Defender used BLOCKER: {blocker_char.name} ({blocker_char.power})")
+            
             apply_blocker(self.game, self.battle, blocker_id)
         self.battle.phase = BattlePhase.COUNTER
         
         # Phase 3: Ask defender for counters
         counter_cards = self._get_counter_response()
+        if counter_cards:
+            total_counter_value = sum(
+                card.counter if hasattr(card, 'counter') else 0 
+                for card in counter_cards
+            )
+            self._log(f"Defender played {len(counter_cards)} COUNTER card(s) (+{total_counter_value} power):")
+            for card in counter_cards:
+                counter_val = card.counter if hasattr(card, 'counter') else 0
+                self._log(f"  - {card.name} (+{counter_val})")
+        
         for counter in counter_cards:
             apply_counter(self.game, self.battle, counter)
         self.battle.phase = BattlePhase.RESOLVE
         
         # Phase 4: Resolve
-        resolve_battle(self.game, self.battle)
+        result = resolve_battle(self.game, self.battle)
+        
+        # Log battle outcome
+        if result == "defense_success":
+            self._log(f"Battle Result: DEFENSE SUCCEEDS ({self.battle.get_final_defender_power()} > {self.battle.get_final_attacker_power()})")
+        else:
+            self._log(f"Battle Result: ATTACK SUCCEEDS ({self.battle.get_final_attacker_power()} >= {self.battle.get_final_defender_power()})")
         
         return self.battle
     
@@ -142,7 +172,8 @@ def execute_interactive_battle(
     attacker_id: str,
     target_id: str,
     is_leader_attack: bool,
-    defender_player
+    defender_player,
+    log_callback=None
 ) -> Battle:
     """
     Execute a battle with defender interaction.
@@ -156,6 +187,7 @@ def execute_interactive_battle(
         target_id: ID of target
         is_leader_attack: True if leader is attacking
         defender_player: Player object for the defender
+        log_callback: Optional function(message: str) to log battle events
         
     Returns:
         Completed Battle object
@@ -165,7 +197,8 @@ def execute_interactive_battle(
         attacker_id=attacker_id,
         target_id=target_id,
         is_leader_attack=is_leader_attack,
-        defender_player=defender_player
+        defender_player=defender_player,
+        log_callback=log_callback
     )
     
     return battle_manager.execute()

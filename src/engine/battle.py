@@ -163,6 +163,10 @@ def initiate_battle(
         phase=BattlePhase.BLOCKER
     )
     
+    target_name = "Leader" if target_is_leader else target_id[:8]
+    attacker_name = "Leader" if is_leader_attack else attacker_id[:8]
+    print(f"[Battle] INITIATED: {attacker_name} ({attacker_power}) attacking {target_name} ({defender_power})")
+    
     return battle
 
 
@@ -198,6 +202,7 @@ def apply_blocker(game: GameState, battle: Battle, blocker_id: str) -> None:
         raise ValueError("Blocker must be ACTIVE (not rested)")
     
     # Redirect attack to blocker
+    print(f"[Battle] BLOCKER ACTIVATED: {blocker.name} ({blocker.power}) redirecting attack from original defender ({battle.defender_power})")
     battle.current_target_id = blocker_id
     battle.target_is_leader = False
     battle.defender_power = blocker.power

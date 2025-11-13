@@ -78,6 +78,9 @@ class Game:
         # Track game history
         self.action_history: list[Action] = []
         self.turn_count = 0
+        
+        # Optional callback for battle logging (can be set by UI)
+        self.battle_log_callback = None
     
     def initialize_game(self) -> None:
         """
@@ -404,7 +407,8 @@ class Game:
             attacker_id=action.attacker_id,
             target_id=action.target_id,
             is_leader_attack=action.is_leader_attack,
-            defender_player=defender_player
+            defender_player=defender_player,
+            log_callback=self.battle_log_callback
         )
         
         # Battle resolution already handles:
