@@ -1518,11 +1518,13 @@ class GameScreen(ttk.Frame):
             # Calculate win advantage for player 1 (human player)
             result = calculate_win_advantage(self.game.state, "1")
             
-            # Update the win bar
-            self.update_win_bar(result['win_probability'])
+            # Update the win bar (result.advantage is 0.0-1.0, convert to percentage)
+            self.update_win_bar(result.advantage * 100)
             
         except Exception as e:
             print(f"[Win Advantage] Error calculating: {e}")
+            import traceback
+            traceback.print_exc()
             # Default to 50% on error
             self.update_win_bar(50.0)
     
@@ -1548,6 +1550,10 @@ class GameScreen(ttk.Frame):
             self.log_action("YOU ended turn")
             self.status_label.config(text="Ending turn...")
             self.update()
+            
+            # Clear first_turn flag after completing your first turn
+            current_player = self.game.state.get_active_player()
+            current_player.first_turn = False
             
             # Switch to opponent and increment turn
             self.game.state.switch_active_player()
@@ -1612,9 +1618,9 @@ class GameScreen(ttk.Frame):
                 player.attached_don.clear()
                 player.active_don = player.don_pool  # ALL DON refresh to active!
                 
-                # Clear summoning sickness
+                # Clear played_this_turn set (summoning sickness for new cards)
                 player.played_this_turn.clear()
-                player.first_turn = False
+                # NOTE: first_turn flag is cleared at END of turn, not during REFRESH
                 
                 self.update_display()
                 self.update()
@@ -1714,6 +1720,10 @@ class GameScreen(ttk.Frame):
             self.update()
             self.after(500)
             
+            # Clear first_turn flag after AI completes its first turn
+            current_player = self.game.state.get_active_player()
+            current_player.first_turn = False
+            
             # Switch back to player and increment turn
             self.game.state.switch_active_player()
             self.game.state.current_turn += 1
@@ -1762,10 +1772,10 @@ class GameScreen(ttk.Frame):
             msg = "💡 BEST MOVE SUGGESTIONS\n\n"
             
             for i, move in enumerate(suggestions, 1):
-                msg += f"#{i} - {move['description']}\n"
-                msg += f"   Win Δ: {move['delta_win_advantage']:+.1f}%\n"
-                msg += f"   Risk: {move['risk_level']}\n"
-                msg += f"   {move['explanation']}\n\n"
+                msg += f"#{i} - {move.description}\n"
+                msg += f"   Win Δ: {move.delta:+.1f}%\n"
+                msg += f"   Risk: {move.risk_level.value}\n"
+                msg += f"   {move.explanation}\n\n"
             
             messagebox.showinfo(
                 "Best Move Suggestions",
@@ -1791,8 +1801,8 @@ class GameScreen(ttk.Frame):
             self.status_label.config(text="🎯 Analyzing position...")
             self.update()
             
-            # Get insights for player 1
-            insights = analyze_position(self.game.state, "1")
+            # Get insights for player 1 (pass Game object, not game.state)
+            insights = analyze_position(self.game, "1")
             
             if not insights:
                 messagebox.showinfo(
@@ -1802,44 +1812,67 @@ class GameScreen(ttk.Frame):
                 )
                 return
             
-            # Group insights by severity
-            threats_high = [i for i in insights if i.category == "threat" and i.severity == "HIGH"]
-            threats_med = [i for i in insights if i.category == "threat" and i.severity == "MEDIUM"]
-            opportunities = [i for i in insights if i.category == "opportunity"]
-            material = [i for i in insights if i.category == "material"]
-            tempo = [i for i in insights if i.category == "tempo"]
+            # Group insights by type and severity
+            from src.analysis.strategic_insights import InsightType, InsightSeverity
+            
+            threats_high = [i for i in insights if i.type == InsightType.THREAT and i.severity == InsightSeverity.HIGH]
+            threats_med = [i for i in insights if i.type == InsightType.THREAT and i.severity == InsightSeverity.MEDIUM]
+            threats_crit = [i for i in insights if i.type == InsightType.THREAT and i.severity == InsightSeverity.CRITICAL]
+            opportunities = [i for i in insights if i.type == InsightType.OPPORTUNITY]
+            material = [i for i in insights if i.type == InsightType.MATERIAL]
+            tempo = [i for i in insights if i.type == InsightType.TEMPO]
+            defense = [i for i in insights if i.type == InsightType.DEFENSE]
+            resource = [i for i in insights if i.type == InsightType.RESOURCE]
             
             # Build message
             msg = "🎯 STRATEGIC INSIGHTS\n\n"
             
+            if threats_crit:
+                msg += "🚨 CRITICAL THREATS:\n"
+                for insight in threats_crit:
+                    msg += f"   • {insight.description}\n"
+                msg += "\n"
+            
             if threats_high:
                 msg += "⚠️ HIGH THREATS:\n"
                 for insight in threats_high:
-                    msg += f"   • {insight.message}\n"
+                    msg += f"   • {insight.description}\n"
                 msg += "\n"
             
             if threats_med:
                 msg += "⚡ MEDIUM THREATS:\n"
                 for insight in threats_med:
-                    msg += f"   • {insight.message}\n"
+                    msg += f"   • {insight.description}\n"
                 msg += "\n"
             
             if opportunities:
                 msg += "✨ OPPORTUNITIES:\n"
                 for insight in opportunities:
-                    msg += f"   • {insight.message}\n"
+                    msg += f"   • {insight.description}\n"
                 msg += "\n"
             
             if material:
                 msg += "📊 MATERIAL:\n"
                 for insight in material:
-                    msg += f"   • {insight.message}\n"
+                    msg += f"   • {insight.description}\n"
                 msg += "\n"
             
             if tempo:
                 msg += "⏱️ TEMPO:\n"
                 for insight in tempo:
-                    msg += f"   • {insight.message}\n"
+                    msg += f"   • {insight.description}\n"
+                msg += "\n"
+            
+            if defense:
+                msg += "🛡️ DEFENSE:\n"
+                for insight in defense:
+                    msg += f"   • {insight.description}\n"
+                msg += "\n"
+            
+            if resource:
+                msg += "⚡ RESOURCES:\n"
+                for insight in resource:
+                    msg += f"   • {insight.description}\n"
             
             # Show in a scrollable dialog
             dialog = tk.Toplevel(self)
