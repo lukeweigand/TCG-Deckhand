@@ -427,29 +427,23 @@ class MinimaxAI:
     
     def get_defensive_counters(self, game_state: GameState, battle) -> List:
         """
-        Choose counter cards during opponent's attack.
-        
-        For now, uses simple heuristic (can be improved later).
+        Choose counter cards during opponent's attack using smart heuristics.
         
         Args:
             game_state: Current game state
             battle: The battle in progress
             
         Returns:
-            List of counter Event cards to play
+            List of counter cards to play (optimized to not overspend)
         """
-        # TODO: Use minimax to evaluate counter value
-        # For now, simple heuristic: use one counter if available
         from src.models import Event
         from src.engine.abilities import get_counter_value
         
         player = game_state.player1 if game_state.player1.player_id == self.player_id else game_state.player2
         
-        # Find counter cards (both Characters and Events can have counter values)
-        counters = []
+        # Find counter cards with their values
+        available_counters = []
         for card in player.hand:
-            # In One Piece TCG, both Character and Event cards can be played as counters
-            # Characters have a counter attribute, Events have it in effect_text
             counter_value = 0
             if hasattr(card, 'counter'):
                 counter_value = card.counter
@@ -458,21 +452,74 @@ class MinimaxAI:
                 counter_value = parsed_value if parsed_value is not None else 0
             
             if counter_value > 0:
-                counters.append(card)
+                available_counters.append((card, counter_value))
         
-        print(f"[MinimaxAI] Defensive counters check: {len(counters)} counters available in hand of {len(player.hand)} cards")
-        if counters:
+        print(f"[MinimaxAI] Defensive counters check: {len(available_counters)} counters available in hand of {len(player.hand)} cards")
+        if available_counters:
             print(f"[MinimaxAI] Available counter cards from HAND:")
-            for card in counters[:5]:  # Show first 5
-                cv = card.counter if hasattr(card, 'counter') else 0
-                print(f"  - {card.name} (Counter: {cv})")
+            for card, value in available_counters[:5]:
+                print(f"  - {card.name} (Counter: {value})")
         
-        # Use one counter (can improve this logic)
-        if counters:
-            print(f"[MinimaxAI] Playing 1 counter card")
-            return [counters[0]]
+        if not available_counters:
+            return []
         
-        return []
+        # Calculate damage deficit (need to be ABOVE attacker power to defend successfully)
+        defender_power = battle.defender_power
+        damage_difference = battle.attacker_power - defender_power
+        
+        print(f"[MinimaxAI] Attacker power: {battle.attacker_power}, Defender power: {defender_power}, Difference: {damage_difference}")
+        
+        # If already winning, don't counter
+        if damage_difference < 0:
+            print(f"[MinimaxAI] Already winning battle, not countering")
+            return []
+        
+        # COST-BENEFIT ANALYSIS
+        if battle.target_is_leader:
+            print(f"[MinimaxAI] Defending LEADER - will use counters")
+        else:
+            # Defending character - check if it's worth it
+            if damage_difference <= 0:
+                counters_needed = 1000  # Just need to break the tie
+            else:
+                # Round up to nearest 1000
+                counters_needed = ((damage_difference + 999) // 1000) * 1000
+            sorted_counters = sorted(available_counters, key=lambda x: x[1])
+            total_counter_value = 0
+            cards_needed = 0
+            for card, counter_value in sorted_counters:
+                if total_counter_value < counters_needed:
+                    total_counter_value += counter_value
+                    cards_needed += 1
+            
+            if total_counter_value > (defender_power * 2):
+                print(f"[MinimaxAI] NOT WORTH IT: Would spend {total_counter_value} to save {defender_power}")
+                return []
+            
+            print(f"[MinimaxAI] Defending character worth it: spending {total_counter_value} to save {defender_power}")
+        
+        # Use smallest counters first, ensure we EXCEED attacker power
+        counters_to_play = []
+        current_total_counter = 0
+        
+        for card, counter_value in sorted(available_counters, key=lambda x: x[1]):
+            # Check if current defense + counters would exceed attacker
+            if battle.defender_power + current_total_counter <= battle.attacker_power:
+                # Still not exceeding, need this counter
+                counters_to_play.append(card)
+                current_total_counter += counter_value
+                print(f"[MinimaxAI] Adding counter: {card.name} (+{counter_value}), new total: {battle.defender_power + current_total_counter} vs attacker {battle.attacker_power}")
+                
+                # Stop if we now exceed
+                if battle.defender_power + current_total_counter > battle.attacker_power:
+                    break
+            else:
+                # Already exceeding
+                if counter_value > 2000:
+                    break
+        
+        print(f"[MinimaxAI] Playing {len(counters_to_play)} counter cards")
+        return counters_to_play
     
     def reset(self):
         """Reset AI statistics."""

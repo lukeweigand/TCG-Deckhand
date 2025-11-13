@@ -382,8 +382,12 @@ class MCTSAI:
         else:
             # Defending a character (or blocker) - check if it's worth it
             # Rule: Don't spend more counter value than the defender is worth
-            # Calculate minimum counter value needed
-            counters_needed = damage_difference + 1  # Need to exceed by at least 1
+            # Calculate minimum counter value needed (round up to nearest 1000)
+            if damage_difference <= 0:
+                counters_needed = 1000  # Just need to break the tie
+            else:
+                # Round up to nearest 1000
+                counters_needed = ((damage_difference + 999) // 1000) * 1000
             
             # Estimate what it would cost (use smallest counters first)
             sorted_counters = sorted(available_counters, key=lambda x: x[1])
@@ -404,17 +408,26 @@ class MCTSAI:
             print(f"[MCTSAI] Defending character worth it: spending {total_counter_value} to save {defender_power}")
         
         # Use counters to get defender power ABOVE attacker power (not just equal)
+        # Strategy: Use smallest counters first, but don't overspend unnecessarily
         counters_to_play = []
-        remaining_difference = damage_difference + 1  # Need to exceed by at least 1
+        # Calculate how much we need to EXCEED attacker power
+        # Defender must be STRICTLY GREATER, so if tied or behind, need to exceed
+        current_total_counter = 0
         
         for card, counter_value in sorted(available_counters, key=lambda x: x[1]):
-            if remaining_difference > 0:
+            # Check if current defense + counters so far would exceed attacker
+            if battle.defender_power + current_total_counter <= battle.attacker_power:
+                # Still not exceeding, need this counter
                 counters_to_play.append(card)
-                remaining_difference -= counter_value
-                print(f"[MCTSAI] Adding counter: {card.name} (+{counter_value}), remaining deficit: {remaining_difference}")
+                current_total_counter += counter_value
+                print(f"[MCTSAI] Adding counter: {card.name} (+{counter_value}), new total: {battle.defender_power + current_total_counter} vs attacker {battle.attacker_power}")
                 
-                # Stop if we've exceeded attacker power (not just equaled)
-                if remaining_difference <= 0:
+                # Stop if we now exceed attacker power
+                if battle.defender_power + current_total_counter > battle.attacker_power:
+                    break
+            else:
+                # Already exceeding, check if adding this would be wasteful
+                if counter_value > 2000:  # Don't add huge counters if we're already winning
                     break
         
         print(f"[MCTSAI] Playing {len(counters_to_play)} counter cards to exceed attacker power")

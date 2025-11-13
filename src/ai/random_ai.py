@@ -181,11 +181,9 @@ class RandomAI:
         # Get this player's state
         player = game_state.player1 if game_state.player1.player_id == self.player_id else game_state.player2
         
-        # Find counter cards in hand (both Characters and Events can have counter values)
+        # Find counter cards in hand with their values
         available_counters = []
         for card in player.hand:
-            # In One Piece TCG, both Character and Event cards can be played as counters
-            # Characters have a counter attribute, Events have it in effect_text
             counter_value = 0
             if hasattr(card, 'counter'):
                 counter_value = card.counter
@@ -194,27 +192,55 @@ class RandomAI:
                 counter_value = parsed_value if parsed_value is not None else 0
             
             if counter_value > 0:
-                available_counters.append(card)
+                available_counters.append((card, counter_value))
         
         print(f"[RandomAI] Defensive counters check: {len(available_counters)} counters available in hand of {len(player.hand)} cards")
         if available_counters:
             print(f"[RandomAI] Available counter cards from HAND:")
-            for card in available_counters[:5]:  # Show first 5
-                cv = card.counter if hasattr(card, 'counter') else 0
-                print(f"  - {card.name} (Counter: {cv})")
+            for card, value in available_counters[:5]:
+                print(f"  - {card.name} (Counter: {value})")
         
         # If no counters available, can't counter
         if not available_counters:
             return []
         
+        # Calculate how much we need
+        defender_power = battle.defender_power
+        damage_difference = battle.attacker_power - defender_power
+        
+        # If already winning, don't counter
+        if damage_difference < 0:
+            print(f"[RandomAI] Already winning, not countering")
+            return []
+        
         # Randomly decide whether to counter (50% chance)
-        # Could play 0, 1, or multiple counters
         if random.random() < 0.5:
-            # Randomly choose how many counters to play (1-3)
-            num_counters = random.randint(1, min(3, len(available_counters)))
-            counters = random.sample(available_counters, num_counters)
-            print(f"[RandomAI] Playing {len(counters)} counter cards")
-            return counters
+            # Use smallest counters first, ensure we exceed attacker power
+            counters_to_play = []
+            current_total_counter = 0
+            max_overspend = 2000  # Easy AI can overspend a bit
+            
+            for card, counter_value in sorted(available_counters, key=lambda x: x[1]):
+                # Check if we need more counters to exceed
+                if battle.defender_power + current_total_counter <= battle.attacker_power:
+                    counters_to_play.append(card)
+                    current_total_counter += counter_value
+                    print(f"[RandomAI] Adding counter: {card.name} (+{counter_value}), new total: {battle.defender_power + current_total_counter} vs attacker {battle.attacker_power}")
+                    
+                    # Stop if we now exceed
+                    if battle.defender_power + current_total_counter > battle.attacker_power:
+                        break
+                else:
+                    # Already exceeding - might add one more if not too wasteful (easy AI behavior)
+                    if current_total_counter < max_overspend and len(counters_to_play) < 2:
+                        counters_to_play.append(card)
+                        current_total_counter += counter_value
+                        print(f"[RandomAI] Adding extra counter (easy AI): {card.name} (+{counter_value})")
+                    break
+            
+            if counters_to_play:
+                print(f"[RandomAI] Playing {len(counters_to_play)} counter cards")
+                return counters_to_play
         
         print(f"[RandomAI] Decided not to counter (random)")
         return []
