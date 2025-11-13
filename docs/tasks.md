@@ -1,13 +1,13 @@
 # TCG Deckhand - MVP Task Tracker
 
 **Target Release:** December 2025  
-**Last Updated:** November 11, 2025
+**Last Updated:** November 13, 2025
 
 > This is a living document tracking all work needed to build the MVP. Tasks are organized by component and marked with status indicators.
 
 ## 📊 Current Progress Summary
 
-**Overall Status:** Phase 6.2 Complete - MVP FULLY PLAYABLE! 🎮  
+**Overall Status:** MVP FULLY FUNCTIONAL - Bug Fixes & Polish Phase 🎮  
 **Total Tests Passing:** 412 tests
 - Phase 1: ✅ Complete (Infrastructure)
 - Phase 2: ✅ Complete (Core Game Engine - 263 tests)
@@ -22,6 +22,13 @@
 - Phase 5.4: ✅ Complete (Strategic Features UI)
 - Phase 6.1: ✅ Complete (UI-Engine Integration)
 - Phase 6.2: ✅ Complete (AI Integration)
+
+**Recent Achievements (Nov 13, 2025):**
+- ✅ **Summoning sickness fixed!** First-turn flag now properly prevents both players from attacking on their first turn
+- ✅ **AI counter logic optimized!** All difficulties (Easy/Medium/Hard/Expert) now counter efficiently without overspending
+- ✅ **Cost-benefit analysis!** AI evaluates whether defending is worth the counter card cost
+- ✅ **Battle logging enhanced!** Action log shows blocker usage, counter cards played, and battle outcomes
+- ✅ **Strategic improvements!** AI properly calculates when to let blockers die vs. spending counters
 
 **Recent Achievements (Nov 11, 2025):**
 - ✅ **Full game UI completed!** Play cards, attack, defend with blockers/counters
@@ -126,12 +133,13 @@
 - ✅ **Design AI interface** - Player Protocol implemented in `src/engine/game.py` with get_action() method
 - ✅ **Implement random AI (baseline)** - `src/ai/random_ai.py` with offensive actions (14 tests passing)
 - ✅ **Add defensive AI capabilities** - Blocker responses and counter card usage (10 additional tests passing)
+- ✅ **Optimize counter logic** - Smart counter selection that doesn't overspend (Nov 13, 2025)
 - ✅ **Create interactive battle system** - `src/engine/interactive_battle.py` for defender interaction during combat
 - ✅ **Write move generator** - `get_legal_actions()` already implemented in rules.py
 - ✅ **Total AI tests** - 24 tests passing (14 offensive + 10 defensive)
 - ⚠️ **Demos created** - demo_ai_battle.py and demo_ai_defense.py (display encoding issue in PowerShell, functionality works)
 
-**Phase 3.1 Complete: RandomAI works like chess bots - chooses from legal moves, responds defensively during opponent attacks**
+**Phase 3.1 Complete: RandomAI works like chess bots - chooses from legal moves, responds defensively with smart counter usage**
 
 ### 3.2 Strategic AI (Minimax) ✅ ✅
 - ✅ **Research Minimax algorithm** - Studied approach for turn-based games with look-ahead search
@@ -140,11 +148,12 @@
 - ✅ **Implement action simulation** - Complete simulation for PlayCard, Attack, AttachDon, PassPhase actions (7 tests passing)
 - ✅ **Add depth-limited search** - Configurable depth with branching limit for performance
 - ✅ **Inherit defensive capabilities** - Minimax uses same blocker/counter decision methods
+- ✅ **Optimize counter logic** - Smart counter selection ensuring defender strictly exceeds attacker power (Nov 13, 2025)
 - ✅ **Test Minimax vs Random AI** - **RESULTS: 90% win rate (9/10 games), avg 19 turns, 0.07s per game!**
 - ✅ **Fixed summoning sickness bug in get_legal_actions()** - AI now properly filters illegal attacks
 - ✅ **Added infinite loop protection in game loop** - Forces pass after 5 failed actions
 
-**Phase 3.2 Complete: Minimax AI decisively beats RandomAI with 90% win rate!**
+**Phase 3.2 Complete: Minimax AI decisively beats RandomAI with 90% win rate and efficient counter usage!**
 
 ### 3.3 Advanced AI (Monte Carlo Tree Search) ✅ ✅
 - ✅ **Research MCTS algorithm** - Studied UCB1 selection, simulation-based search, and time-budgeted iterative deepening
@@ -153,6 +162,7 @@
 - ✅ **Add time-based search** - Difficulty levels: Easy (0.5s), Medium (1.0s), Hard (2.0s) thinking budgets
 - ✅ **Implement full rollouts** - True MCTS with random game playouts (not just static eval)
 - ✅ **Add defensive capabilities** - get_defensive_blocker() and get_defensive_counters() with heuristic evaluation
+- ✅ **Optimize counter logic** - Cost-benefit analysis and precise counter selection (Nov 13, 2025)
 - ✅ **Write unit tests** - 25 tests passing (17 MCTSNode + 8 MCTSAI core tests)
 - ✅ **Fix performance tests** - Game initialization refactored, all 4 performance tests passing
 - ✅ **Test MCTS vs Random** - **100% win rate** (701 iterations/game with rollouts)
@@ -160,7 +170,7 @@
 - ✅ **Profile performance** - Rollouts cost 40% fewer iterations but maintain strategic strength vs Random
 - ✅ **Document findings** - Comprehensive analysis in `docs/mcts-rollout-analysis.md`
 
-**Phase 3.3 Complete: True MCTS implementation with full rollouts. Perfect for Easy/Medium difficulty. Use MinimaxAI for Hard/Expert.**
+**Phase 3.3 Complete: True MCTS implementation with smart defensive play. Perfect for Easy/Medium difficulty. Use MinimaxAI for Hard/Expert.**
 **AI Lineup: Easy (Random/MCTS 0.5s) → Medium (MCTS 1.0s) → Hard (Minimax d=1) → Expert (Minimax d=2)**
 
 ---
@@ -254,10 +264,12 @@
 - ✅ **Add counter selection** - Multi-card selection dialog for counter cards during defense
 - ✅ **Implement confirmation dialogs** - Yes/No confirmations for all major actions (play card, attach DON, attack, end turn)
 - ✅ **Add action log display** - Scrollable timestamped log showing all player and AI actions
+- ✅ **Enhanced battle logging** - Shows blocker usage, counter cards played, battle outcomes with final power totals
 - ✅ **Integrate Win Advantage Calculator** - Real-time win probability bar updating after each action
 - ✅ **Integrate Best Move Suggestions** - AI-powered analysis showing top 3 moves with explanations, win% delta, and risk levels
 - ✅ **Integrate Strategic Insights** - Position analysis with threats, opportunities, material, and tempo evaluation
 - ✅ **Fix leader attack-once bug** - Leaders now properly rest after attacking and validate RESTED state
+- ✅ **Fix summoning sickness bug** - First-turn flag now cleared at END of turn (both player and AI), ensuring neither can attack on their first turn
 - ⬜ **Implement drag-and-drop** - Optional enhancement for card playing (not needed for MVP)
 
 **Phase 5.3 COMPLETE: Full game UI with all strategic features integrated! 🎮**
@@ -371,43 +383,41 @@
 
 ## Current Sprint (Update Weekly)
 
-**Sprint Goal:** Complete Phase 7 - Testing & Quality (Play testing and bug fixes)  
-**Sprint Dates:** November 11, 2025
+**Sprint Goal:** Manual Play Testing & Bug Fixes  
+**Sprint Dates:** November 13, 2025
 
 ### This Week's Focus:
-- [x] Complete Phase 5.3 - Core Game Board UI
-- [x] Complete Phase 5.4 - Strategic Features UI
-- [x] Complete Phase 6.1 - UI-Engine Integration
-- [x] Complete Phase 6.2 - AI Integration
-- [ ] Manual play testing
-- [ ] Fix any critical bugs found
-- [ ] Polish UI/UX based on feedback
+- [x] Fix summoning sickness bug (first-turn restriction)
+- [x] Optimize AI counter logic (all difficulties)
+- [x] Add battle logging to action log
+- [ ] Manual play testing (multiple complete games)
+- [ ] UI/UX polish based on testing feedback
+- [ ] Document known issues for MVP release
 
-### Completed This Week (Nov 11, 2025):
-- ✅ **Phase 5.3 Complete - Core Game Board UI**
-  - Attack mode with character/leader selection and targeting
-  - Blocker selection dialog for defensive gameplay
-  - Counter card selection with multi-card support
-  - Confirmation dialogs for all major actions
-  - Action log with timestamped history
-  - Real-time game state updates
-  - Bug fix: Leaders now properly rest after attacking
+### Completed This Week (Nov 13, 2025):
+- ✅ **Summoning Sickness Fixed**
+  - First-turn flag now cleared at END of turn, not during REFRESH
+  - Both player and AI properly restricted from attacking on their first turn
+  - Matches official One Piece TCG rules correctly
   
-- ✅ **Phase 5.4 Complete - Strategic Features UI**
-  - Win Advantage Calculator integrated with real-time updates
-  - Best Move Suggestions button with top 3 ranked moves
-  - Strategic Insights button with categorized analysis
-  - Visual win probability bar with color coding
+- ✅ **AI Counter Logic Optimized (All Difficulties)**
+  - Fixed counter calculation to ensure defender STRICTLY EXCEEDS attacker power
+  - Implemented cost-benefit analysis: always defend leader, evaluate character defense value
+  - Smart counter selection: uses minimal counters without overspending
+  - Easy AI: allows up to 2000 overspend (intentionally less optimal)
+  - Medium/Hard/Expert AI: minimal overspend, efficient counter usage
+  - Example: Attack 5000 vs Defense 4000 → Plays +2000 counter (6000 > 5000) ✓
   
-- ✅ **Phase 6.1 & 6.2 Complete - Full Integration**
-  - UI fully wired to game engine
-  - AI opponent integrated with turn processing
-  - Action logging for both player and AI moves
-  - Error handling and validation messages
+- ✅ **Battle Logging Enhanced**
+  - Action log now shows blocker usage with character name and power
+  - Counter cards displayed with individual values and total power boost
+  - Battle outcomes logged with final power comparison (defender > attacker or vice versa)
+  - Provides clear visibility into defensive actions during battles
 
-**MVP NOW FULLY PLAYABLE!** 🎮 Can play complete games from menu → game → victory
-
-### Completed Previously:
+### Completed Previously (Nov 11, 2025):
+- ✅ Phase 5.3 Complete - Core Game Board UI
+- ✅ Phase 5.4 Complete - Strategic Features UI
+- ✅ Phase 6.1 & 6.2 Complete - Full Integration
 - ✅ Phase 3.2 Minimax AI - Complete (Oct 30)
   - **BoardEvaluator (8 tests):**
     - Created 7-factor position scoring: life (1000), characters (100), DON!! (50), hand (30), deck (5), power (0.01), leader rested (-200)
@@ -429,11 +439,25 @@
     - Verified with comprehensive tests (play, attack, DON!!, phase, isolation)
 
 ### Blockers:
-- None! MVP is feature-complete. Ready for play testing and polish.
+- None! MVP is fully functional. Ready for final play testing and release preparation.
 
 ---
 
 ## Notes & Decisions
+
+### AI Counter Logic (Nov 13, 2025)
+- **Strict Power Comparison:** Defender must be STRICTLY GREATER than attacker to win (defender > attacker, not >=). Fixed all AI counter logic to check `defender_power + counters > attacker_power` instead of `>= attacker_power`.
+- **Counter Value Increments:** All counter cards have values of 1000 or 2000. AI logic now properly works with these discrete increments instead of trying to hit exact deficit values.
+- **Cost-Benefit Analysis:** AI evaluates whether defending is worth the counter cost:
+  - Always defend the leader (life cards are critical)
+  - Only defend characters if counter cost ≤ 2x defender power
+  - Example: Spending 4000 counter value to save a 2000 power character is rejected
+- **Battle Logging:** Added callback system to log defensive actions (blockers, counters, battle outcomes) to the UI action log. Provides clear visibility into what happened during battles.
+
+### Summoning Sickness Fix (Nov 13, 2025)
+- **Bug:** First-turn flag was cleared during REFRESH phase at start of turn, allowing Player 2 to attack on their first turn (turn 2).
+- **Fix:** First-turn flag now cleared at END of turn (when player ends their turn or AI finishes MAIN phase), ensuring it stays True throughout their first turn.
+- **Flow:** Player 1 Turn 1 → first_turn=True throughout → Clear at end. Player 2 Turn 2 → first_turn=True throughout → Clear at end. Both players can attack starting from their second turn.
 
 ### Recent UI/UX Decisions (Nov 11, 2025)
 - **Confirmation Dialogs:** All major actions (play card, attach DON, attack, end turn) require Yes/No confirmation to prevent accidental moves during practice sessions. This is crucial for learning mode where players want to carefully consider each action.
