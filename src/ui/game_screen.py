@@ -1516,7 +1516,7 @@ class GameScreen(ttk.Frame):
         """Update the win advantage bar.
         
         Args:
-            win_percent: Win probability percentage (0-100)
+            win_percent: Win probability percentage (0-100) for Player 1 (YOU)
         """
         canvas = self.win_bar_canvas
         canvas.delete('all')
@@ -1527,16 +1527,35 @@ class GameScreen(ttk.Frame):
         # Draw background
         canvas.create_rectangle(0, 0, width, height, fill='#1a1a1a', outline='#4a4a4a')
         
-        # Draw win bar
+        # Draw win bar (fills from left for player win %)
         bar_width = int((win_percent / 100) * width)
-        color = '#4a9eff' if win_percent >= 50 else '#ff6b6b'
+        
+        # Color: Green gradient for high win %, red for low
+        if win_percent >= 70:
+            color = '#4ade80'  # Green - winning
+        elif win_percent >= 55:
+            color = '#4a9eff'  # Blue - slight advantage
+        elif win_percent >= 45:
+            color = '#fbbf24'  # Yellow - even
+        elif win_percent >= 30:
+            color = '#fb923c'  # Orange - disadvantage
+        else:
+            color = '#ff6b6b'  # Red - losing
+            
         canvas.create_rectangle(0, 0, bar_width, height, fill=color, outline='')
         
-        # Draw center line
+        # Draw center line (50% mark)
         canvas.create_line(width//2, 0, width//2, height, fill='#666666', width=2)
         
-        # Update percentage label
-        self.win_percent_label.config(text=f"{win_percent:.1f}%")
+        # Add labels "YOU" on left, "AI" on right
+        canvas.create_text(20, height//2, text="YOU", fill='#ffffff', font=('Arial', 9, 'bold'), anchor='w')
+        canvas.create_text(width-20, height//2, text="AI", fill='#ffffff', font=('Arial', 9, 'bold'), anchor='e')
+        
+        # Update percentage label with clearer text
+        self.win_percent_label.config(
+            text=f"Your Win Chance: {win_percent:.1f}%",
+            fg=color  # Match bar color
+        )
     
     def calculate_and_update_win_advantage(self):
         """Calculate current win advantage and update display."""
@@ -1548,6 +1567,14 @@ class GameScreen(ttk.Frame):
             
             # Calculate win advantage for player 1 (human player)
             result = calculate_win_advantage(self.game.state, "1")
+            
+            # DEBUG: Print evaluation details
+            print(f"\n[Win Advantage Debug]")
+            print(f"  Player 1 (You): {len(self.game.state.player1.life_cards)} life, {len(self.game.state.player1.characters)} chars, {len(self.game.state.player1.hand)} hand")
+            print(f"  Player 2 (AI): {len(self.game.state.player2.life_cards)} life, {len(self.game.state.player2.characters)} chars, {len(self.game.state.player2.hand)} hand")
+            print(f"  Evaluation Score: {result.evaluation_score:.1f}")
+            print(f"  Win Probability: {result.advantage_percent}")
+            print(f"  Interpretation: {result.interpretation}")
             
             # Update the win bar (result.advantage is 0.0-1.0, convert to percentage)
             self.update_win_bar(result.advantage * 100)
