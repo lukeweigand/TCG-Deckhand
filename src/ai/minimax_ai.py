@@ -479,11 +479,18 @@ class MinimaxAI:
             print(f"[MinimaxAI] Defending LEADER - will use counters")
         else:
             # Defending character - check if it's worth it
-            if damage_difference <= 0:
-                counters_needed = 1000  # Just need to break the tie
+            # Need to STRICTLY EXCEED attacker, so damage_difference + 1
+            if damage_difference < 0:
+                # Already winning
+                return []
+            elif damage_difference == 0:
+                # Tied, need at least 1000 to exceed
+                counters_needed = 1000
             else:
+                # Behind by damage_difference, need at least (damage_difference + 1) to exceed
                 # Round up to nearest 1000
-                counters_needed = ((damage_difference + 999) // 1000) * 1000
+                counters_needed = ((damage_difference + 1000) // 1000) * 1000
+            
             sorted_counters = sorted(available_counters, key=lambda x: x[1])
             total_counter_value = 0
             cards_needed = 0

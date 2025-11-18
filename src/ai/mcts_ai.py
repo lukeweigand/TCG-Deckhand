@@ -382,12 +382,17 @@ class MCTSAI:
         else:
             # Defending a character (or blocker) - check if it's worth it
             # Rule: Don't spend more counter value than the defender is worth
-            # Calculate minimum counter value needed (round up to nearest 1000)
-            if damage_difference <= 0:
-                counters_needed = 1000  # Just need to break the tie
+            # Need to STRICTLY EXCEED attacker, so damage_difference + 1
+            if damage_difference < 0:
+                # Already winning
+                return []
+            elif damage_difference == 0:
+                # Tied, need at least 1000 to exceed
+                counters_needed = 1000
             else:
+                # Behind by damage_difference, need at least (damage_difference + 1) to exceed
                 # Round up to nearest 1000
-                counters_needed = ((damage_difference + 999) // 1000) * 1000
+                counters_needed = ((damage_difference + 1000) // 1000) * 1000
             
             # Estimate what it would cost (use smallest counters first)
             sorted_counters = sorted(available_counters, key=lambda x: x[1])
