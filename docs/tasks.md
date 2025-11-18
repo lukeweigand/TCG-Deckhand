@@ -1,13 +1,13 @@
 # TCG Deckhand - MVP Task Tracker
 
 **Target Release:** December 2025  
-**Last Updated:** November 13, 2025
+**Last Updated:** November 18, 2025
 
 > This is a living document tracking all work needed to build the MVP. Tasks are organized by component and marked with status indicators.
 
 ## 📊 Current Progress Summary
 
-**Overall Status:** MVP FULLY FUNCTIONAL - Bug Fixes & Polish Phase 🎮  
+**Overall Status:** MVP FULLY FUNCTIONAL - Manual Testing & Bug Fixes Phase 🎮  
 **Total Tests Passing:** 412 tests
 - Phase 1: ✅ Complete (Infrastructure)
 - Phase 2: ✅ Complete (Core Game Engine - 263 tests)
@@ -22,6 +22,15 @@
 - Phase 5.4: ✅ Complete (Strategic Features UI)
 - Phase 6.1: ✅ Complete (UI-Engine Integration)
 - Phase 6.2: ✅ Complete (AI Integration)
+
+**Recent Achievements (Nov 18, 2025):**
+- ✅ **Critical UI/UX bugs fixed from manual testing!**
+- ✅ **Blocker dialog improved!** Now shows who is attacking what (attacker + target info)
+- ✅ **AI counter overspending FIXED!** Removed problematic loop logic causing extra counter cards
+- ✅ **Character replacement scrollable!** Can view all characters even in small window
+- ✅ **Player counter UI enhanced!** Shows already selected cards and running total power
+- ✅ **Game over popup added!** Prominent winner screen with Return to Menu button
+- ✅ **Game now stops on win!** No more continuing after victory/defeat
 
 **Recent Achievements (Nov 13, 2025):**
 - ✅ **Summoning sickness fixed!** First-turn flag now properly prevents both players from attacking on their first turn
@@ -384,15 +393,31 @@
 ## Current Sprint (Update Weekly)
 
 **Sprint Goal:** Manual Play Testing & Bug Fixes  
-**Sprint Dates:** November 13, 2025
+**Sprint Dates:** November 13-18, 2025
 
 ### This Week's Focus:
 - [x] Fix summoning sickness bug (first-turn restriction)
 - [x] Optimize AI counter logic (all difficulties)
 - [x] Add battle logging to action log
-- [ ] Manual play testing (multiple complete games)
+- [x] Fix critical bugs found during manual testing
+- [ ] Continue manual play testing (multiple complete games at all difficulties)
 - [ ] UI/UX polish based on testing feedback
 - [ ] Document known issues for MVP release
+
+### Completed This Week (Nov 18, 2025):
+- ✅ **Critical Bug Fixes from Manual Testing**
+  - **Blocker Dialog Enhancement:** Added attacker name and target info ("ATTACK: Luffy (6000 power) is attacking Your Leader!")
+  - **AI Counter Overspending FIXED:** Removed problematic else block in counter loop that was adding extra counters after already exceeding
+  - **Character Replacement Scrollable:** Added Canvas with scrollbar so all characters viewable even in small window
+  - **Player Counter UI Improved:** Shows already selected cards, individual counter values, running total, and new defense power comparison
+  - **Game Over Popup:** Prominent fullscreen popup with trophy/skull emoji, WIN/LOSE message, and Return to Menu button
+  - **Game Stops on Victory:** Added game over check after both player and AI turns, disables buttons and shows popup
+  
+- ✅ **Bug Details:**
+  - Issue: Attack 6000 vs Leader 5000, AI used +2000 AND +1000 (total 8000, overspent 3000)
+  - Root Cause: Loop continued after exceeding due to `else` block checking for "huge counters"
+  - Fix: Removed else block, loop now exits immediately when `defender_power + counters > attacker_power`
+  - Applied to: MCTSAI and MinimaxAI (RandomAI already working correctly)
 
 ### Completed This Week (Nov 13, 2025):
 - ✅ **Summoning Sickness Fixed**

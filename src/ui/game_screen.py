@@ -1086,7 +1086,7 @@ class GameScreen(ttk.Frame):
         # Create popup window
         dialog = tk.Toplevel(self)
         dialog.title("Select Character to Replace")
-        dialog.geometry("500x300")
+        dialog.geometry("500x400")
         dialog.configure(bg='#2b2b2b')
         dialog.transient(self)
         dialog.grab_set()
@@ -1101,10 +1101,24 @@ class GameScreen(ttk.Frame):
             bg='#2b2b2b'
         ).pack(pady=10)
         
-        # Character buttons
-        char_frame = tk.Frame(dialog, bg='#2b2b2b')
-        char_frame.pack(expand=True, fill='both', padx=20, pady=10)
+        # Create canvas with scrollbar for character list
+        canvas_frame = tk.Frame(dialog, bg='#2b2b2b')
+        canvas_frame.pack(expand=True, fill='both', padx=20, pady=10)
         
+        canvas = tk.Canvas(canvas_frame, bg='#2b2b2b', highlightthickness=0)
+        scrollbar = tk.Scrollbar(canvas_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg='#2b2b2b')
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
         def select_char(char_id):
             selected_id[0] = char_id
             dialog.destroy()
@@ -1116,7 +1130,7 @@ class GameScreen(ttk.Frame):
                 char_text += f"\n⚡×{attached_don}"
             
             btn = tk.Button(
-                char_frame,
+                scrollable_frame,
                 text=char_text,
                 command=lambda c=char: select_char(c.id),
                 font=('Arial', 10),
@@ -1201,7 +1215,10 @@ class GameScreen(ttk.Frame):
         import tkinter.messagebox as messagebox
         import tkinter.simpledialog as simpledialog
         
-        msg = f"⚔️ {attacker_name} ({attacker_power} power) is attacking!\n\n"
+        # Determine what is being attacked
+        target_name = "Your Leader" if battle.target_is_leader else "your character"
+        
+        msg = f"⚔️ ATTACK: {attacker_name} ({attacker_power} power) is attacking {target_name}!\n\n"
         msg += "Available blockers:\n"
         for i, char in enumerate(blockers, 1):
             attached_don = player.attached_don.get(char.id, 0)
@@ -1314,10 +1331,21 @@ class GameScreen(ttk.Frame):
         # For now, let player select multiple by entering numbers (comma-separated)
         selected_cards = []
         while True:
+            total_counter_power = sum(c.counter for c in selected_cards)
+            new_defender_power = defender_power + total_counter_power
+            
+            selected_text = ""
+            if selected_cards:
+                selected_text = "\n\nCARDS ALREADY SELECTED:\n"
+                for card in selected_cards:
+                    selected_text += f"  ✓ {card.name} [+{card.counter}]\n"
+                selected_text += f"\nTotal counter power: +{total_counter_power}\n"
+                selected_text += f"New defense: {new_defender_power} vs {attacker_power} attack"
+            
             choice = simpledialog.askstring(
                 "Select Counters",
                 f"Available counters:\n" + "\n".join([f"{i}. {c.name} [+{c.counter}]" for i, c in enumerate(counter_cards, 1)]) +
-                f"\n\nAlready selected: {sum(c.counter for c in selected_cards)} power" +
+                selected_text +
                 "\n\nEnter card number to add (or 'done' to finish):",
                 parent=self
             )
@@ -1727,6 +1755,17 @@ class GameScreen(ttk.Frame):
             current_player = self.game.state.get_active_player()
             current_player.first_turn = False
             
+            # Check if game is over after AI turn
+            if self.game.state.is_game_over():
+                winner = self.game.state.get_winner()
+                if winner:
+                    winner_name = "You" if winner.player_id == self.game.state.player1.player_id else "Opponent"
+                    self.status_label.config(text=f"🏆 {winner_name} WIN!")
+                    self.attack_btn.config(state=tk.DISABLED)
+                    self.end_turn_btn.config(state=tk.DISABLED)
+                    self.show_game_over_popup(winner_name)
+                    return
+            
             # Switch back to player and increment turn
             self.game.state.switch_active_player()
             self.game.state.current_turn += 1
@@ -2055,6 +2094,9 @@ class GameScreen(ttk.Frame):
                         self.status_label.config(text=f"🏆 {winner_name} WIN!")
                         self.attack_btn.config(state=tk.DISABLED)
                         self.end_turn_btn.config(state=tk.DISABLED)
+                        
+                        # Show game over popup
+                        self.show_game_over_popup(winner_name)
                 else:
                     self.status_label.config(text=f"✅ Attack complete! Select another attacker or end turn.")
                 
@@ -2166,6 +2208,75 @@ class GameScreen(ttk.Frame):
         """Clear the battle indicator."""
         self.battle_canvas.delete('all')
         self.battle_info_label.config(text="")
+    
+    def show_game_over_popup(self, winner_name):
+        """
+        Show prominent game over popup with winner and return to menu button.
+        
+        Args:
+            winner_name: "You" or "Opponent"
+        """
+        # Create fullscreen overlay dialog
+        dialog = tk.Toplevel(self)
+        dialog.title("Game Over")
+        dialog.geometry("600x400")
+        dialog.configure(bg='#1a1a1a')
+        dialog.transient(self)
+        dialog.grab_set()
+        
+        # Center the dialog
+        dialog.update_idletasks()
+        x = (dialog.winfo_screenwidth() // 2) - (600 // 2)
+        y = (dialog.winfo_screenheight() // 2) - (400 // 2)
+        dialog.geometry(f"600x400+{x}+{y}")
+        
+        # Winner announcement
+        winner_color = '#4ade80' if winner_name == "You" else '#f87171'
+        trophy = '🏆' if winner_name == "You" else '💀'
+        
+        tk.Label(
+            dialog,
+            text=trophy,
+            font=('Arial', 72),
+            fg=winner_color,
+            bg='#1a1a1a'
+        ).pack(pady=(40, 20))
+        
+        tk.Label(
+            dialog,
+            text=f"{winner_name} WIN!" if winner_name == "You" else "YOU LOSE!",
+            font=('Arial', 36, 'bold'),
+            fg=winner_color,
+            bg='#1a1a1a'
+        ).pack(pady=10)
+        
+        result_text = "Victory!" if winner_name == "You" else "Defeat!"
+        tk.Label(
+            dialog,
+            text=result_text,
+            font=('Arial', 18),
+            fg='#ffffff',
+            bg='#1a1a1a'
+        ).pack(pady=10)
+        
+        # Return to menu button
+        def return_to_menu():
+            dialog.destroy()
+            self.app.show_screen('main_menu')
+        
+        tk.Button(
+            dialog,
+            text="Return to Menu",
+            command=return_to_menu,
+            font=('Arial', 16, 'bold'),
+            bg='#4a7a4a',
+            fg='#ffffff',
+            relief='raised',
+            bd=5,
+            cursor='hand2',
+            padx=30,
+            pady=15
+        ).pack(pady=40)
     
     def go_back(self):
         """Return to main menu."""

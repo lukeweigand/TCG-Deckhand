@@ -498,27 +498,36 @@ class MinimaxAI:
             
             print(f"[MinimaxAI] Defending character worth it: spending {total_counter_value} to save {defender_power}")
         
-        # Use smallest counters first, ensure we EXCEED attacker power
+        # Use counters to get defender power ABOVE attacker power (not just equal)
+        # CORRECT LOGIC: Try to find minimal counter solution
+        # Rule: Defense succeeds if defender_power > attacker_power (strictly greater)
         counters_to_play = []
-        current_total_counter = 0
         
-        for card, counter_value in sorted(available_counters, key=lambda x: x[1]):
-            # Check if current defense + counters would exceed attacker
-            if battle.defender_power + current_total_counter <= battle.attacker_power:
-                # Still not exceeding, need this counter
-                counters_to_play.append(card)
-                current_total_counter += counter_value
-                print(f"[MinimaxAI] Adding counter: {card.name} (+{counter_value}), new total: {battle.defender_power + current_total_counter} vs attacker {battle.attacker_power}")
-                
-                # Stop if we now exceed
-                if battle.defender_power + current_total_counter > battle.attacker_power:
-                    break
-            else:
-                # Already exceeding
-                if counter_value > 2000:
-                    break
+        # Sort counters by value (smallest first)
+        sorted_counters = sorted(available_counters, key=lambda x: x[1])
+        
+        # Strategy: Try each single counter first - use smallest one that works
+        for card, counter_value in sorted_counters:
+            if battle.defender_power + counter_value > battle.attacker_power:
+                # This single counter is enough to win
+                counters_to_play = [card]
+                print(f"[MinimaxAI] Using single counter: {card.name} (+{counter_value}), final defense: {battle.defender_power + counter_value} vs attacker {battle.attacker_power}")
+                return counters_to_play
+        
+        # No single counter is enough, need to combine multiple
+        # Use greedy approach: add smallest counters until we exceed
+        current_total_counter = 0
+        for card, counter_value in sorted_counters:
+            counters_to_play.append(card)
+            current_total_counter += counter_value
+            print(f"[MinimaxAI] Adding counter: {card.name} (+{counter_value}), running total: {battle.defender_power + current_total_counter} vs attacker {battle.attacker_power}")
+            
+            if battle.defender_power + current_total_counter > battle.attacker_power:
+                # Now exceeding, stop
+                break
         
         print(f"[MinimaxAI] Playing {len(counters_to_play)} counter cards")
+        return counters_to_play
         return counters_to_play
     
     def reset(self):
