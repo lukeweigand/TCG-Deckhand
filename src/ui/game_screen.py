@@ -1527,34 +1527,39 @@ class GameScreen(ttk.Frame):
         # Draw background
         canvas.create_rectangle(0, 0, width, height, fill='#1a1a1a', outline='#4a4a4a')
         
-        # Draw win bar (fills from left for player win %)
-        bar_width = int((win_percent / 100) * width)
+        # TWO-COLOR COMPETITIVE BAR:
+        # Blue (YOU) fills from left, Red (AI) fills from right
+        # They meet in the middle based on win %
         
-        # Color: Green gradient for high win %, red for low
-        if win_percent >= 70:
-            color = '#4ade80'  # Green - winning
-        elif win_percent >= 55:
-            color = '#4a9eff'  # Blue - slight advantage
-        elif win_percent >= 45:
-            color = '#fbbf24'  # Yellow - even
-        elif win_percent >= 30:
-            color = '#fb923c'  # Orange - disadvantage
-        else:
-            color = '#ff6b6b'  # Red - losing
-            
-        canvas.create_rectangle(0, 0, bar_width, height, fill=color, outline='')
+        player_width = int((win_percent / 100) * width)
+        ai_width = width - player_width
+        
+        # Player bar (blue) - from left
+        player_color = '#4a9eff'
+        canvas.create_rectangle(0, 0, player_width, height, fill=player_color, outline='')
+        
+        # AI bar (red) - from right
+        ai_color = '#ff6b6b'
+        canvas.create_rectangle(player_width, 0, width, height, fill=ai_color, outline='')
         
         # Draw center line (50% mark)
-        canvas.create_line(width//2, 0, width//2, height, fill='#666666', width=2)
+        canvas.create_line(width//2, 0, width//2, height, fill='#ffffff', width=2, dash=(3, 3))
         
         # Add labels "YOU" on left, "AI" on right
         canvas.create_text(20, height//2, text="YOU", fill='#ffffff', font=('Arial', 9, 'bold'), anchor='w')
         canvas.create_text(width-20, height//2, text="AI", fill='#ffffff', font=('Arial', 9, 'bold'), anchor='e')
         
-        # Update percentage label with clearer text
+        # Update percentage label - color based on who's winning
+        if win_percent >= 50:
+            label_color = player_color
+            status = "Advantage"
+        else:
+            label_color = ai_color
+            status = "Disadvantage"
+            
         self.win_percent_label.config(
-            text=f"Your Win Chance: {win_percent:.1f}%",
-            fg=color  # Match bar color
+            text=f"You: {win_percent:.0f}% | AI: {100-win_percent:.0f}%",
+            fg=label_color
         )
     
     def calculate_and_update_win_advantage(self):
@@ -1565,8 +1570,12 @@ class GameScreen(ttk.Frame):
         try:
             from src.analysis.win_advantage import calculate_win_advantage
             
+            # CRITICAL FIX: Use actual player1 ID (UUID), not hardcoded "1"
+            # Player IDs are random UUIDs from initialize_game(), not simple strings
+            player1_id = self.game.state.player1.player_id
+            
             # Calculate win advantage for player 1 (human player)
-            result = calculate_win_advantage(self.game.state, "1")
+            result = calculate_win_advantage(self.game.state, player1_id)
             
             # DEBUG: Print evaluation details
             print(f"\n[Win Advantage Debug]")
