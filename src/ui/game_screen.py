@@ -1835,8 +1835,9 @@ class GameScreen(ttk.Frame):
             self.status_label.config(text="💡 Analyzing best moves...")
             self.update()
             
-            # Get top 3 move suggestions
-            suggestions = suggest_best_moves(self.game, "1", count=3)
+            # Get top 3 move suggestions (use actual player1 UUID)
+            player1_id = self.game.state.player1.player_id
+            suggestions = suggest_best_moves(self.game, player1_id, count=3)
             
             if not suggestions:
                 messagebox.showinfo(
@@ -1879,8 +1880,9 @@ class GameScreen(ttk.Frame):
             self.status_label.config(text="🎯 Analyzing position...")
             self.update()
             
-            # Get insights for player 1 (pass Game object, not game.state)
-            insights = analyze_position(self.game, "1")
+            # Get insights for player 1 (use actual player1 UUID)
+            player1_id = self.game.state.player1.player_id
+            insights = analyze_position(self.game, player1_id)
             
             if not insights:
                 messagebox.showinfo(

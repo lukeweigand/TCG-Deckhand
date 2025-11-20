@@ -51,7 +51,7 @@ class StrategicInsight:
     details: Optional[dict] = None
 
 
-def analyze_position(game: Game, player_id: int) -> List[StrategicInsight]:
+def analyze_position(game: Game, player_id: str) -> List[StrategicInsight]:
     """Analyze current game position and generate strategic insights.
     
     This is the main API for the Strategic Insights system. It examines:
@@ -64,7 +64,7 @@ def analyze_position(game: Game, player_id: int) -> List[StrategicInsight]:
     
     Args:
         game: Current game state
-        player_id: Which player to analyze for (1 or 2)
+        player_id: Player UUID to analyze for (string, not integer)
         
     Returns:
         List of insights sorted by severity (critical first)
@@ -72,8 +72,9 @@ def analyze_position(game: Game, player_id: int) -> List[StrategicInsight]:
     insights = []
     
     state = game.state
-    player = state.player1 if player_id == 1 else state.player2
-    opponent = state.player2 if player_id == 1 else state.player1
+    # Compare player_id to actual UUIDs, not hardcoded integers
+    player = state.player1 if player_id == state.player1.player_id else state.player2
+    opponent = state.player2 if player_id == state.player1.player_id else state.player1
     
     # Analyze different aspects of the position
     insights.extend(_analyze_material(player, opponent, player_id))

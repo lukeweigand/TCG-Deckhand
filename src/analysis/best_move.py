@@ -202,7 +202,7 @@ def _generate_explanation(action: Action, delta: float, risk: RiskLevel) -> str:
 
 def suggest_best_moves(
     game: Game,
-    player_id: int,
+    player_id: str,  # UUID string, not integer
     count: int = 3,
     depth: int = 1
 ) -> List[MoveRecommendation]:
@@ -213,7 +213,7 @@ def suggest_best_moves(
     
     Args:
         game: Current game state
-        player_id: Player to suggest moves for (1 or 2)
+        player_id: Player UUID to suggest moves for (string, not integer)
         count: Number of recommendations to return (default 3)
         depth: Search depth for move evaluation (default 1)
         
@@ -221,7 +221,8 @@ def suggest_best_moves(
         List of move recommendations, sorted best to worst
         
     Example:
-        >>> recs = suggest_best_moves(game, player_id=1, count=3)
+        >>> player_id = game.state.player1.player_id
+        >>> recs = suggest_best_moves(game, player_id, count=3)
         >>> print(f"Best move: {recs[0].description}")
         >>> print(f"Win% change: {recs[0].delta:+.1f}%")
     """
@@ -231,8 +232,8 @@ def suggest_best_moves(
     # Get current win advantage
     current_advantage = calculate_win_advantage(game.state, player_id)
     
-    # Get all legal moves for this player
-    legal_actions = get_legal_actions(game.state, str(player_id))
+    # Get all legal moves for this player (player_id is already a string UUID)
+    legal_actions = get_legal_actions(game.state, player_id)
     
     if not legal_actions:
         return []
