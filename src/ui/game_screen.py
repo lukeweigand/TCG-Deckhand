@@ -615,24 +615,36 @@ class GameScreen(ttk.Frame):
             self.update()
             
             # Get player's selected deck or use test deck
-            if hasattr(self.app, 'selected_deck') and self.app.selected_deck:
-                player_deck = self.app.selected_deck
-                leader = player_deck.leader
-                deck_cards = player_deck.cards.copy()
+            player_deck = None
+            if hasattr(self.app, 'selected_player_deck') and self.app.selected_player_deck:
+                player_deck = self.app.selected_player_deck
+                player_leader = player_deck.leader
+                player_deck_cards = player_deck.cards.copy()
                 
                 # Validate deck
-                if not leader:
+                if not player_leader:
                     messagebox.showwarning("No Leader", "Your deck has no leader! Using test deck instead.")
                     player_deck = None
-                elif len(deck_cards) != 50:
-                    messagebox.showwarning("Invalid Deck Size", f"Your deck has {len(deck_cards)} cards instead of 50! Using test deck instead.")
+                elif len(player_deck_cards) != 50:
+                    messagebox.showwarning("Invalid Deck Size", f"Your deck has {len(player_deck_cards)} cards instead of 50! Using test deck instead.")
                     player_deck = None
-            else:
-                player_deck = None
             
-            # Fall back to test deck if no valid deck selected
+            # Get AI's selected deck or use test deck
+            ai_deck = None
+            if hasattr(self.app, 'selected_ai_deck') and self.app.selected_ai_deck:
+                ai_deck = self.app.selected_ai_deck
+                ai_leader = ai_deck.leader
+                ai_deck_cards = ai_deck.cards.copy()
+                
+                # Validate deck
+                if not ai_leader:
+                    ai_deck = None
+                elif len(ai_deck_cards) != 50:
+                    ai_deck = None
+            
+            # Fall back to test deck if no valid player deck
             if not player_deck:
-                leader = Leader(
+                player_leader = Leader(
                     name="Monkey D. Luffy",
                     cost=0,
                     power=5000,
@@ -641,7 +653,7 @@ class GameScreen(ttk.Frame):
                 )
                 
                 # Create test deck with varied abilities
-                deck_cards = []
+                player_deck_cards = []
                 for i in range(50):
                     effect_parts = []
                     
@@ -664,9 +676,44 @@ class GameScreen(ttk.Frame):
                         effect_text=" ".join(effect_parts) if effect_parts else ""
                     )
                     
-                    deck_cards.append(char)
+                    player_deck_cards.append(char)
             
-            deck = Deck(name="Test Deck", leader=leader, cards=deck_cards)
+            # Fall back to test deck if no valid AI deck
+            if not ai_deck:
+                ai_leader = Leader(
+                    name="Trafalgar Law",
+                    cost=0,
+                    power=5000,
+                    life=4,
+                    effect_text="AI Leader ability"
+                )
+                
+                # Create test deck for AI
+                ai_deck_cards = []
+                for i in range(50):
+                    effect_parts = []
+                    if i % 4 == 0:
+                        effect_parts.append("[Blocker]")
+                    
+                    counter_value = 2000 if i % 2 == 0 else 1000
+                    
+                    char = Character(
+                        name=f"Enemy {i+1}",
+                        cost=min((i % 5) + 1, 4),
+                        power=2000 + ((i % 5) * 1000),
+                        counter=counter_value,
+                        effect_text=" ".join(effect_parts) if effect_parts else ""
+                    )
+                    
+                    ai_deck_cards.append(char)
+            
+            # Create game
+            config = GameConfig(
+                player1_deck=player_deck_cards,
+                player2_deck=ai_deck_cards,
+                player1_leader=player_leader,
+                player2_leader=ai_leader
+            )
             
             # Create AI based on difficulty
             self.status_label.config(text=f"Initializing {self.difficulty} AI...")
@@ -681,14 +728,6 @@ class GameScreen(ttk.Frame):
                 ai = MinimaxAI("2", max_depth=1)
             else:  # expert
                 ai = MinimaxAI("2", max_depth=2)
-            
-            # Create game
-            config = GameConfig(
-                player1_deck=deck_cards,
-                player2_deck=deck_cards,
-                player1_leader=leader,
-                player2_leader=leader
-            )
             
             # Create human player for player1 with UI callback
             human_player = HumanPlayer("1", ui_callback=self)
