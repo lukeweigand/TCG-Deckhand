@@ -1681,6 +1681,19 @@ class GameScreen(ttk.Frame):
             current_player = self.game.state.get_active_player()
             current_player.first_turn = False
             
+            # CRITICAL: Check if player deck is empty before ending turn
+            player_state = self.game.state.player1
+            if len(player_state.deck) == 0 and not player_state.defeated:
+                player_state.defeated = True
+                self.log_action(f"💀 DECK-OUT! You have no cards left in deck!")
+                self.update_display()
+                
+                winner = self.game.state.get_winner()
+                if winner:
+                    winner_name = "You" if winner.player_id == self.game.state.player1.player_id else "Opponent"
+                    self.show_game_over_popup(winner_name)
+                return
+            
             # Switch to opponent and increment turn
             self.game.state.switch_active_player()
             self.game.state.current_turn += 1
@@ -1774,6 +1787,20 @@ class GameScreen(ttk.Frame):
                 if len(player.deck) > 0:
                     card = player.deck.pop(0)
                     player.hand.append(card)
+                    
+                    # CRITICAL: Check if deck is NOW empty (just drew last card)
+                    if len(player.deck) == 0:
+                        player.defeated = True
+                        self.log_action(f"💀 DECK-OUT! {player.name} drew their last card!")
+                        self.update_display()
+                        
+                        # Trigger game over popup
+                        winner = self.game.state.get_winner()
+                        if winner:
+                            winner_name = winner.name
+                            self.after(1000, lambda: self.show_game_over_popup(winner_name))
+                        return  # Game is over
+                
                 self.update_display()
                 self.update()
                 self.after(500)
@@ -1865,6 +1892,20 @@ class GameScreen(ttk.Frame):
             # Clear first_turn flag after AI completes its first turn
             current_player = self.game.state.get_active_player()
             current_player.first_turn = False
+            
+            # CRITICAL: Check for deck-out immediately after AI turn
+            # If AI deck is empty, they lose immediately
+            ai_state = self.game.state.player2
+            if len(ai_state.deck) == 0 and not ai_state.defeated:
+                ai_state.defeated = True
+                self.log_action(f"💀 DECK-OUT! AI has no cards left in deck!")
+                self.update_display()
+                
+                winner = self.game.state.get_winner()
+                if winner:
+                    winner_name = "You" if winner.player_id == self.game.state.player1.player_id else "Opponent"
+                    self.show_game_over_popup(winner_name)
+                return
             
             # Check if game is over after AI turn
             if self.game.state.is_game_over():
