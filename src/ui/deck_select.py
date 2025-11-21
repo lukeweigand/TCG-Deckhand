@@ -8,7 +8,7 @@ from tkinter import ttk, messagebox
 from src.db import get_all_decks
 
 
-class DeckSelect(ttk.Frame):
+class DeckSelect(tk.Frame):
     """Screen for selecting a deck to play with."""
     
     def __init__(self, parent, app):
@@ -18,7 +18,7 @@ class DeckSelect(ttk.Frame):
             parent: Parent widget
             app: Reference to main TCGDeckhandApp instance
         """
-        super().__init__(parent)
+        super().__init__(parent, bg='#2b2b2b')
         self.app = app
         self.selected_player_deck = None
         self.selected_ai_deck = None
@@ -29,24 +29,26 @@ class DeckSelect(ttk.Frame):
     def create_widgets(self):
         """Create and layout all UI elements."""
         # Main container
-        main_frame = ttk.Frame(self)
+        main_frame = tk.Frame(self, bg='#2b2b2b')
         main_frame.pack(expand=True, fill='both', padx=40, pady=40)
         
         # Title
-        title_label = ttk.Label(
+        title_label = tk.Label(
             main_frame,
             text="Select Decks for Battle",
             font=('Arial', 32, 'bold'),
-            foreground='#4a9eff'
+            fg='#4a9eff',
+            bg='#2b2b2b'
         )
         title_label.pack(pady=(0, 20))
         
         # Subtitle with difficulty info
-        self.subtitle_label = ttk.Label(
+        self.subtitle_label = tk.Label(
             main_frame,
             text="",
             font=('Arial', 12),
-            foreground='#a0a0a0'
+            fg='#a0a0a0',
+            bg='#2b2b2b'
         )
         self.subtitle_label.pack(pady=(0, 30))
         
@@ -204,65 +206,6 @@ class DeckSelect(ttk.Frame):
             self.ai_listbox = listbox
             self.ai_info_label = info_label
             listbox.bind('<<ListboxSelect>>', self.on_ai_deck_select)
-        
-        # Buttons
-        button_frame = tk.Frame(main_frame, bg='#2b2b2b')
-        button_frame.pack(pady=10)
-        
-        back_btn = tk.Button(
-            button_frame,
-            text="← Back",
-            command=self.go_back,
-            width=15,
-            height=2,
-            font=('Arial', 12),
-            bg='#3a3a3a',
-            fg='#ffffff',
-            activebackground='#4a4a4a',
-            activeforeground='#ffffff',
-            border=0,
-            cursor='hand2'
-        )
-        back_btn.pack(side='left', padx=10)
-        back_btn.bind('<Enter>', lambda e: back_btn.configure(bg='#4a4a4a'))
-        back_btn.bind('<Leave>', lambda e: back_btn.configure(bg='#3a3a3a'))
-        
-        deck_builder_btn = tk.Button(
-            button_frame,
-            text="📚 Build New Deck",
-            command=self.open_deck_builder,
-            width=18,
-            height=2,
-            font=('Arial', 12),
-            bg='#3a3a3a',
-            fg='#ffffff',
-            activebackground='#4a4a4a',
-            activeforeground='#ffffff',
-            border=0,
-            cursor='hand2'
-        )
-        deck_builder_btn.pack(side='left', padx=10)
-        deck_builder_btn.bind('<Enter>', lambda e: deck_builder_btn.configure(bg='#4a4a4a'))
-        deck_builder_btn.bind('<Leave>', lambda e: deck_builder_btn.configure(bg='#3a3a3a'))
-        
-        self.start_btn = tk.Button(
-            button_frame,
-            text="Start Game →",
-            command=self.start_game,
-            width=15,
-            height=2,
-            font=('Arial', 12, 'bold'),
-            bg='#4a9eff',
-            fg='#ffffff',
-            activebackground='#3a7acc',
-            activeforeground='#ffffff',
-            border=0,
-            cursor='hand2',
-            state='disabled'  # Disabled until deck selected
-        )
-        self.start_btn.pack(side='left', padx=10)
-        self.start_btn.bind('<Enter>', lambda e: self.start_btn.configure(bg='#3a7acc') if self.start_btn['state'] == 'normal' else None)
-        self.start_btn.bind('<Leave>', lambda e: self.start_btn.configure(bg='#4a9eff') if self.start_btn['state'] == 'normal' else None)
     
     def refresh_deck_lists(self):
         """Load and display all saved decks in both listboxes."""
