@@ -203,12 +203,20 @@ flake8 src/ tests/
 
 ## 📚 Documentation
 
+### For Users
+- **[User Manual](docs/user-manual.md)** - Complete guide to installation, gameplay, and deck building
+- **[Deck Format Specification](docs/deck-format-specification.md)** - Deck construction rules and validation
+
+### For Developers
+- **[Developer Guide](docs/developer-guide.md)** - Architecture, setup, testing, and contribution guide
+- **[Technical Specification](docs/technical-specification.md)** - Detailed technical design
+- **[Test Commands Reference](docs/test-commands-reference.md)** - Complete testing guide
+
+### Project Planning
 - **[Product Requirements Document (PRD)](docs/prd.md)** - Product vision and goals
-- **[Technical Specification](docs/technical-specification.md)** - Architecture and tech stack
 - **[Design Document](docs/design-document.md)** - User personas and design principles
 - **[Database Design](docs/database-design.md)** - Schema structure and rationale
-- **[Database Migrations](docs/database-migrations.md)** - Migration strategy and process
-- **[Task Tracker](docs/tasks.md)** - Living document of all MVP work items
+- **[Task Tracker](docs/tasks.md)** - MVP progress and work items
 
 ## 🎓 Learning Resources
 
@@ -226,7 +234,7 @@ This is currently a learning project, but feedback and suggestions are welcome! 
 ## 📝 Current Status
 
 **Version:** 1.0.0 (MVP Complete!)  
-**Phase:** Phase 7 - Testing & Quality Assurance ✅  
+**Phase:** Phase 8.2 - Documentation ✅  
 **Completed:**
 - ✅ Phase 1: Project Setup & Infrastructure
 - ✅ Phase 2: Core Game Engine (One Piece TCG-based, 263 tests)
@@ -235,11 +243,12 @@ This is currently a learning project, but feedback and suggestions are welcome! 
 - ✅ Phase 5: User Interface (Complete game board, deck builder, help system)
 - ✅ Phase 6: Integration (UI ↔ Engine ↔ AI ↔ Database)
 - ✅ Phase 7: Testing & Quality (388+ tests, manual testing checklist)
+- ✅ Phase 8.1: User Experience (Help system, error messages, UX polish)
+- ✅ Phase 8.2: Documentation (User manual, deck format spec, developer guide)
 
 **Next Steps:**
-- Phase 8.2: User Manual & Documentation
-- Phase 8.3: Packaging & Distribution (Windows executable)
-- Phase 9: Final Testing & MVP Launch
+- Phase 8.3: Packaging & Distribution (Windows executable, installer)
+- Phase 9: Final Testing & MVP Launch (December 2025 🚀)
 
 **Test Suite:** 388+ tests passing | December 2025 Launch Target 🚀
 
