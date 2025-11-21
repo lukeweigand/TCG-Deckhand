@@ -47,10 +47,13 @@ class GameScreen(ttk.Frame):
         self.counter_battle = None  # Battle object when in counter mode
         self.selected_counters = []  # List of cards selected to counter
         
+        # Track if we need to reinitialize on next show
+        self.needs_reinit = False
+        
         # Create UI elements
         self.create_widgets()
         
-        # Initialize the game
+        # Initialize the game immediately
         self.initialize_game()
     
     def create_widgets(self):
@@ -431,17 +434,33 @@ class GameScreen(ttk.Frame):
         )
         self.insights_btn.pack(fill='x', pady=5)
         
-        # Game controls
-        control_frame = tk.Frame(action_panel, bg='#1e1e1e')
-        control_frame.pack(fill='x', padx=10, pady=10)
+        # Game controls - make scrollable to fit all buttons
+        control_container = tk.Frame(action_panel, bg='#1e1e1e')
+        control_container.pack(fill='both', expand=False, padx=10, pady=10)
         
         tk.Label(
-            control_frame,
+            control_container,
             text="Game Controls",
             font=('Arial', 10, 'bold'),
             fg='#ffffff',
             bg='#1e1e1e'
         ).pack(pady=5)
+        
+        # Create canvas with scrollbar
+        control_canvas = tk.Canvas(control_container, bg='#1e1e1e', height=280, highlightthickness=0)
+        control_scrollbar = tk.Scrollbar(control_container, orient='vertical', command=control_canvas.yview)
+        control_frame = tk.Frame(control_canvas, bg='#1e1e1e')
+        
+        control_frame.bind(
+            '<Configure>',
+            lambda e: control_canvas.configure(scrollregion=control_canvas.bbox('all'))
+        )
+        
+        control_canvas.create_window((0, 0), window=control_frame, anchor='nw', width=280)
+        control_canvas.configure(yscrollcommand=control_scrollbar.set)
+        
+        control_canvas.pack(side='left', fill='both', expand=True)
+        control_scrollbar.pack(side='right', fill='y')
         
         self.attack_btn = tk.Button(
             control_frame,
@@ -474,6 +493,31 @@ class GameScreen(ttk.Frame):
             state='disabled'
         )
         self.end_turn_btn.pack(fill='x', pady=3)
+        
+        # Debug/Testing menu
+        tk.Label(
+            control_frame,
+            text="Testing Tools",
+            font=('Arial', 8),
+            fg='#888',
+            bg='#1e1e1e'
+        ).pack(pady=(8, 2))
+        
+        self.debug_btn = tk.Button(
+            control_frame,
+            text="🔧 Debug",
+            command=self.show_debug_menu,
+            font=('Arial', 9),
+            bg='#4a4a4a',
+            fg='#ffffff',
+            relief='raised',
+            bd=2,
+            cursor='hand2',
+            padx=10,
+            pady=6,
+            state='disabled'
+        )
+        self.debug_btn.pack(fill='x', pady=3)
         
         # Status log at bottom
         status_frame = tk.Frame(action_panel, bg='#1a1a1a', relief='solid', bd=1)
@@ -536,9 +580,23 @@ class GameScreen(ttk.Frame):
         self.action_log.see('end')  # Auto-scroll to bottom
         self.action_log.config(state='disabled')
     
+    def tkraise(self, aboveThis=None):
+        """Override tkraise to reinitialize game when screen is shown."""
+        # Reinitialize game with fresh state if needed
+        if self.needs_reinit:
+            self.difficulty = getattr(self.app, 'selected_difficulty', 'medium')
+            self.initialize_game()
+            self.needs_reinit = False
+        
+        # Call parent tkraise
+        super().tkraise(aboveThis)
+    
     def initialize_game(self):
         """Initialize a new game with the selected difficulty."""
         try:
+            # CRITICAL: Clear any existing game state to prevent debug changes from persisting
+            self.game = None
+            
             self.status_label.config(text="Creating game...")
             self.update()
             
@@ -756,6 +814,7 @@ class GameScreen(ttk.Frame):
         self.end_turn_btn.config(state=button_state)
         self.best_move_btn.config(state=button_state)
         self.insights_btn.config(state=button_state)
+        self.debug_btn.config(state=tk.NORMAL)  # Always enabled for testing
     
     def update_field_display(self):
         """Update the field card displays."""
@@ -1696,6 +1755,22 @@ class GameScreen(ttk.Frame):
                 # DRAW PHASE - draw 1 card
                 self.game.state.current_phase = Phase.DRAW
                 self.status_label.config(text=f"{player_name} DRAW phase...")
+                
+                # CRITICAL: Check for deck-out BEFORE attempting to draw
+                if len(player.deck) == 0:
+                    # Player cannot draw - they lose by deck-out
+                    player.defeated = True
+                    self.log_action(f"💀 DECK-OUT! {player.name} has no cards left to draw!")
+                    self.update_display()
+                    
+                    # Trigger game over popup
+                    winner = self.game.state.get_winner()
+                    if winner:
+                        winner_name = winner.name
+                        self.after(1000, lambda: self.show_game_over_popup(winner_name))
+                    return  # Game is over
+                
+                # Deck has cards, draw normally
                 if len(player.deck) > 0:
                     card = player.deck.pop(0)
                     player.hand.append(card)
@@ -2318,5 +2393,143 @@ class GameScreen(ttk.Frame):
     
     def go_back(self):
         """Return to main menu."""
-        # TODO: Add confirmation dialog
+        # Mark that we need to reinitialize on next show
+        self.needs_reinit = True
         self.app.show_screen('main_menu')
+    
+    def show_debug_menu(self):
+        """Show debug/testing menu for edge case testing."""
+        if not self.game or not self.game.state:
+            return
+        
+        # Create popup dialog
+        dialog = tk.Toplevel(self)
+        dialog.title("Debug Menu - Testing Tools")
+        dialog.geometry("400x500")
+        dialog.configure(bg='#2b2b2b')
+        dialog.transient(self)
+        dialog.grab_set()
+        
+        tk.Label(
+            dialog,
+            text="🔧 Testing Tools",
+            font=('Arial', 16, 'bold'),
+            fg='#ffffff',
+            bg='#2b2b2b'
+        ).pack(pady=15)
+        
+        tk.Label(
+            dialog,
+            text="Quickly manipulate game state for testing:",
+            font=('Arial', 10),
+            fg='#aaaaaa',
+            bg='#2b2b2b'
+        ).pack(pady=5)
+        
+        # Button container
+        btn_frame = tk.Frame(dialog, bg='#2b2b2b')
+        btn_frame.pack(fill='both', expand=True, padx=20, pady=10)
+        
+        def make_button(text, command, color='#4a7a4a'):
+            tk.Button(
+                btn_frame,
+                text=text,
+                command=command,
+                font=('Arial', 11),
+                bg=color,
+                fg='#ffffff',
+                relief='raised',
+                bd=3,
+                cursor='hand2',
+                padx=15,
+                pady=10
+            ).pack(fill='x', pady=5)
+        
+        # Debug actions
+        def reduce_player_deck():
+            """Remove most cards from player deck to test deck-out."""
+            player = self.game.state.player1
+            if len(player.deck) > 3:
+                removed = len(player.deck) - 3
+                player.deck = player.deck[:3]
+                self.log_action(f"DEBUG: Reduced your deck to 3 cards (removed {removed})")
+                self.update_display()
+                dialog.destroy()
+        
+        def reduce_ai_deck():
+            """Remove most cards from AI deck to test deck-out."""
+            ai = self.game.state.player2
+            if len(ai.deck) > 3:
+                removed = len(ai.deck) - 3
+                ai.deck = ai.deck[:3]
+                self.log_action(f"DEBUG: Reduced AI deck to 3 cards (removed {removed})")
+                self.update_display()
+                dialog.destroy()
+        
+        def set_player_low_life():
+            """Set player to 1 life card."""
+            player = self.game.state.player1
+            if len(player.life_cards) > 1:
+                removed = len(player.life_cards) - 1
+                cards_to_hand = player.life_cards[1:]
+                player.life_cards = player.life_cards[:1]
+                player.hand.extend(cards_to_hand)
+                self.log_action(f"DEBUG: Set your life to 1 ({removed} cards to hand)")
+                self.update_display()
+                dialog.destroy()
+        
+        def set_ai_low_life():
+            """Set AI to 1 life card."""
+            ai = self.game.state.player2
+            if len(ai.life_cards) > 1:
+                removed = len(ai.life_cards) - 1
+                cards_to_hand = ai.life_cards[1:]
+                ai.life_cards = ai.life_cards[:1]
+                ai.hand.extend(cards_to_hand)
+                self.log_action(f"DEBUG: Set AI life to 1 ({removed} cards to hand)")
+                self.update_display()
+                dialog.destroy()
+        
+        def give_player_don():
+            """Give player 5 extra DON!!."""
+            player = self.game.state.player1
+            player.don_pool += 5
+            player.active_don += 5
+            self.log_action(f"DEBUG: +5 DON!! to you (now {player.don_pool} total)")
+            self.update_display()
+            dialog.destroy()
+        
+        def clear_ai_board():
+            """Remove all AI characters."""
+            ai = self.game.state.player2
+            count = len(ai.characters)
+            ai.characters.clear()
+            ai.character_states.clear()
+            ai.attached_don.clear()
+            self.log_action(f"DEBUG: Cleared AI board ({count} characters removed)")
+            self.update_display()
+            dialog.destroy()
+        
+        # Add buttons
+        make_button("📦 Your Deck → 3 Cards (Test Deck-Out)", reduce_player_deck, '#ff6b6b')
+        make_button("📦 AI Deck → 3 Cards (Test Deck-Out)", reduce_ai_deck, '#ff6b6b')
+        make_button("❤️ Your Life → 1 Card (Test Low Life)", set_player_low_life, '#fb923c')
+        make_button("❤️ AI Life → 1 Card (Test Low Life)", set_ai_low_life, '#fb923c')
+        make_button("⚡ Give You +5 DON!!", give_player_don, '#4a9eff')
+        make_button("🗑️ Clear AI Board", clear_ai_board, '#4a7a4a')
+        
+        # Close button
+        tk.Button(
+            dialog,
+            text="Close",
+            command=dialog.destroy,
+            font=('Arial', 10),
+            bg='#4a4a4a',
+            fg='#ffffff',
+            relief='raised',
+            bd=2,
+            cursor='hand2',
+            padx=20,
+            pady=8
+        ).pack(pady=15)
+

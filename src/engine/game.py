@@ -233,9 +233,17 @@ class Game:
         
         # Draw 1 card (unless first turn of game)
         if self.turn_count > 0:
-            if len(current_player.deck) > 0:
-                card = current_player.deck.pop(0)
-                current_player.hand.append(card)
+            # CRITICAL: Check for deck-out BEFORE attempting to draw
+            if len(current_player.deck) == 0:
+                # Player cannot draw - they lose by deck-out
+                current_player.defeated = True
+                print(f"[DECK-OUT] {current_player.name} has no cards left to draw!")
+                # Don't advance phase - game is over
+                return
+            
+            # Deck has cards, draw normally
+            card = current_player.deck.pop(0)
+            current_player.hand.append(card)
         
         # Advance to next phase
         self.state.advance_phase()
