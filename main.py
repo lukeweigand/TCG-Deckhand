@@ -79,6 +79,9 @@ class TCGDeckhandApp(tk.Tk):
         elif screen_name == 'difficulty_select':
             from src.ui.difficulty_select import DifficultySelect
             screen = DifficultySelect(self.container, self)
+        elif screen_name == 'deck_select':
+            from src.ui.deck_select import DeckSelect
+            screen = DeckSelect(self.container, self)
         elif screen_name == 'help':
             from src.ui.help_screen import HelpScreen
             screen = HelpScreen(self.container, self)
@@ -90,6 +93,10 @@ class TCGDeckhandApp(tk.Tk):
         
         screen.pack(fill='both', expand=True)
         self.screens[screen_name] = screen
+        
+        # Call on_show if the screen has it
+        if hasattr(screen, 'on_show'):
+            screen.on_show()
 
 
 def main():

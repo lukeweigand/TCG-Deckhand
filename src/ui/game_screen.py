@@ -614,40 +614,57 @@ class GameScreen(ttk.Frame):
             self.status_label.config(text="Creating game...")
             self.update()
             
-            # Create test leader and deck
-            leader = Leader(
-                name="Monkey D. Luffy",
-                cost=0,
-                power=5000,
-                life=5,
-                effect_text="Leader ability"
-            )
+            # Get player's selected deck or use test deck
+            if hasattr(self.app, 'selected_deck') and self.app.selected_deck:
+                player_deck = self.app.selected_deck
+                leader = player_deck.leader
+                deck_cards = player_deck.cards.copy()
+                
+                # Validate deck
+                if not leader:
+                    messagebox.showwarning("No Leader", "Your deck has no leader! Using test deck instead.")
+                    player_deck = None
+                elif len(deck_cards) != 50:
+                    messagebox.showwarning("Invalid Deck Size", f"Your deck has {len(deck_cards)} cards instead of 50! Using test deck instead.")
+                    player_deck = None
+            else:
+                player_deck = None
             
-            # Create test deck with varied abilities
-            deck_cards = []
-            for i in range(50):
-                effect_parts = []
-                
-                # Every 5th card gets Blocker
-                if i % 5 == 0:
-                    effect_parts.append("[Blocker]")
-                
-                # Every 7th card gets Rush  
-                if i % 7 == 0:
-                    effect_parts.append("[Rush]")
-                
-                # Counter values vary
-                counter_value = 1000 if i % 3 == 0 else (2000 if i % 3 == 1 else 0)
-                
-                char = Character(
-                    name=f"Pirate {i+1}",
-                    cost=min((i % 5) + 1, 4),
-                    power=2000 + ((i % 5) * 1000),
-                    counter=counter_value,
-                    effect_text=" ".join(effect_parts) if effect_parts else ""
+            # Fall back to test deck if no valid deck selected
+            if not player_deck:
+                leader = Leader(
+                    name="Monkey D. Luffy",
+                    cost=0,
+                    power=5000,
+                    life=5,
+                    effect_text="Leader ability"
                 )
                 
-                deck_cards.append(char)
+                # Create test deck with varied abilities
+                deck_cards = []
+                for i in range(50):
+                    effect_parts = []
+                    
+                    # Every 5th card gets Blocker
+                    if i % 5 == 0:
+                        effect_parts.append("[Blocker]")
+                    
+                    # Every 7th card gets Rush  
+                    if i % 7 == 0:
+                        effect_parts.append("[Rush]")
+                    
+                    # Counter values vary
+                    counter_value = 1000 if i % 3 == 0 else (2000 if i % 3 == 1 else 0)
+                    
+                    char = Character(
+                        name=f"Pirate {i+1}",
+                        cost=min((i % 5) + 1, 4),
+                        power=2000 + ((i % 5) * 1000),
+                        counter=counter_value,
+                        effect_text=" ".join(effect_parts) if effect_parts else ""
+                    )
+                    
+                    deck_cards.append(char)
             
             deck = Deck(name="Test Deck", leader=leader, cards=deck_cards)
             

@@ -642,3 +642,8 @@ class DeckBuilder(tk.Frame):
                 return
         
         self.app.show_screen('main_menu')
+    
+    def on_show(self):
+        """Called when screen is shown."""
+        # Refresh the deck list to show any newly saved decks
+        self.refresh_deck_list()

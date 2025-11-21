@@ -257,13 +257,13 @@ class DifficultySelect(ttk.Frame):
     def start_game(self):
         """Start the game with selected difficulty."""
         difficulty = self.selected_difficulty.get()
-        print(f"Starting game with difficulty: {difficulty}")
+        print(f"Selected difficulty: {difficulty}")
         
-        # Store difficulty in app for game screen to use
+        # Store difficulty in app for later use
         self.app.selected_difficulty = difficulty
         
-        # Go to game screen
-        self.app.show_screen('game')
+        # Go to deck selection screen
+        self.app.show_screen('deck_select')
     
     def go_back(self):
         """Return to main menu."""
