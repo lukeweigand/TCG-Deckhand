@@ -4,13 +4,49 @@
 
 TCG Deckhand provides a secure, offline environment for refining decks and practicing strategies against an AI opponent. Built with privacy as a core principle—no cloud, no multiplayer, just you and your strategic training ground.
 
-## 🎯 MVP Features (Target: December 2025)
+## 🎯 Current Features (November 2025 - MVP Complete!)
 
-- **TCG-Agnostic Game Engine** - Works with any trading card game
-- **AI Opponent** - Practice against strategic computer players
-- **Win Advantage Calculator** - Real-time probability analysis of board state
-- **Best Move Suggestions** - AI-powered recommendations for optimal plays
-- **Local Data Storage** - All deck lists and game data stored privately on your machine
+### ✅ Full Game Implementation
+- **Complete TCG Game Engine** - Based on One Piece TCG rules (adaptable to other games)
+- **AI Opponent with 4 Difficulty Levels:**
+  - Easy: Random AI (learning mode)
+  - Medium: Monte Carlo Tree Search (moderate challenge)
+  - Hard: Minimax AI depth 1 (strong tactical play)
+  - Expert: Minimax AI depth 2 (masters-level opponent)
+- **Authentic Card Rotation** - Cards rotate 90° when tapped, just like physical TCGs
+- **Complete Turn System** - REFRESH → DRAW → DON → MAIN → END phases
+- **Interactive Gameplay** - Play cards, attack, use blockers, play counters
+
+### 🎯 Strategic Analysis Tools
+- **Win Advantage Calculator** - Real-time win probability (0-100%) that updates after every move
+- **Best Move Suggestions** - AI analyzes all legal moves and recommends top 3 with explanations
+- **Strategic Insights** - Natural language analysis of threats, opportunities, and position
+
+### 🎴 Deck Management
+- **Deck Builder** - Create, edit, save, and delete custom decks
+- **Card Pool Browser** - Filter cards by type (Leader/Character/Event/Stage)
+- **Real-time Validation** - Instant feedback on deck legality (50 cards, 1 leader, max 4 copies)
+- **Demo Card Pool** - 50+ demo cards included for testing
+
+### 📚 Documentation & Help
+- **Comprehensive Help System** - 4-tab tutorial covering:
+  - Getting Started (quick start guide)
+  - Game Rules (complete One Piece TCG rules reference)
+  - Controls & UI Guide (how to use every feature)
+  - Strategic Features (detailed explanations of all analysis tools)
+
+### 🔒 Privacy First
+- **100% Offline** - No internet required, no data sent anywhere
+- **Local Storage** - All decks and games saved to SQLite database on your machine
+- **No Multiplayer** - Practice privately without exposing your strategies
+
+## 🎯 Original MVP Goals (December 2025 Target)
+
+- **TCG-Agnostic Game Engine** - ✅ Works with any trading card game
+- **AI Opponent** - ✅ Four difficulty levels with smart defensive play
+- **Win Advantage Calculator** - ✅ Real-time probability analysis
+- **Best Move Suggestions** - ✅ AI-powered recommendations
+- **Local Data Storage** - ✅ All deck lists and game data stored privately
 
 ## 🚀 Quick Start
 
@@ -70,9 +106,20 @@ py main.py
 ```
 
 This will open the game window with the main menu. From there you can:
-- **New Game**: Select AI difficulty and start playing
-- **Deck Builder**: Create and manage decks (coming soon)
-- **Settings**: Configure game options (coming soon)
+- **🎮 New Game**: Select AI difficulty (Easy/Medium/Hard/Expert) and start playing
+- **📚 Deck Builder**: Create, edit, and manage custom decks
+- **📖 Help & Tutorial**: Comprehensive guide to game rules and features
+- **⚙️ Settings**: Configure game options
+- **❌ Exit**: Close the application
+
+### Using the Deck Builder
+
+1. Click "📚 Deck Builder" from the main menu
+2. Click "➕ New Deck" to create a fresh deck
+3. Use the card pool on the right to browse available cards
+4. Click "Add Selected Card" to add cards to your deck
+5. Add exactly 1 Leader and 50 other cards
+6. Click "💾 Save Deck" when complete
 
 ### Initialize the Database
 

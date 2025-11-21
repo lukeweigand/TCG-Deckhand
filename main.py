@@ -79,6 +79,9 @@ class TCGDeckhandApp(tk.Tk):
         elif screen_name == 'difficulty_select':
             from src.ui.difficulty_select import DifficultySelect
             screen = DifficultySelect(self.container, self)
+        elif screen_name == 'help':
+            from src.ui.help_screen import HelpScreen
+            screen = HelpScreen(self.container, self)
         elif screen_name == 'settings':
             from src.ui.settings_screen import SettingsScreen
             screen = SettingsScreen(self.container, self)

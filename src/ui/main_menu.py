@@ -55,6 +55,7 @@ class MainMenu(ttk.Frame):
         buttons = [
             ("🎮 New Game", self.new_game),
             ("📚 Deck Builder", self.deck_builder),
+            ("📖 Help & Tutorial", self.show_help),
             ("⚙️  Settings", self.settings),
             ("❌ Exit", self.exit_game)
         ]
@@ -98,6 +99,11 @@ class MainMenu(ttk.Frame):
         """Open the deck builder."""
         print("Deck Builder clicked")
         self.app.show_screen('deck_builder')
+    
+    def show_help(self):
+        """Open help and tutorial."""
+        print("Help clicked")
+        self.app.show_screen('help')
     
     def settings(self):
         """Open settings."""
