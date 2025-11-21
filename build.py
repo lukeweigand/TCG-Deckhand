@@ -63,8 +63,11 @@ def check_dependencies():
 
 def create_pyinstaller_command():
     """Build the PyInstaller command with all options."""
+    # Use Python -m pyinstaller to ensure we use the right environment
     cmd = [
-        "pyinstaller",
+        sys.executable,
+        "-m",
+        "PyInstaller",
         "--name", APP_NAME,
         "--onefile",  # Single executable file
         "--windowed",  # No console window (GUI app)
@@ -200,7 +203,7 @@ Target Release: December 2025
 """.strip()
     
     readme_path = DIST_DIR / "README.txt"
-    readme_path.write_text(readme_content)
+    readme_path.write_text(readme_content, encoding='utf-8')
     print(f"   ✅ Created {readme_path}")
 
 
@@ -227,7 +230,7 @@ if %ERRORLEVEL% NEQ 0 (
 """
     
     launcher_path = DIST_DIR / "Launch_TCGDeckhand.bat"
-    launcher_path.write_text(launcher_content)
+    launcher_path.write_text(launcher_content, encoding='utf-8')
     print(f"   ✅ Created {launcher_path}")
 
 
