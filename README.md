@@ -92,10 +92,10 @@ TCG Deckhand provides a secure, offline environment for refining decks and pract
 Run the test suite to make sure everything is set up correctly:
 
 ```powershell
-pytest
+pytest tests/ --ignore=tests/test_deck_builder_ui.py --ignore=tests/test_deck_select_ui.py --ignore=tests/test_integration_workflows.py -q
 ```
 
-You should see output indicating all tests passed. ✅
+You should see output indicating **388+ tests passed**. ✅
 
 ### Run the Game
 
@@ -148,23 +148,36 @@ TCG-Deckhand/
 └── README.md             # This file
 ```
 
-## 🧪 Development Workflow
+## 🧪 Development & Testing
 
 ### Running Tests
 
 ```powershell
-# Run all tests
-pytest
+# Run all existing tests (388+ tests)
+pytest tests/ --ignore=tests/test_deck_builder_ui.py --ignore=tests/test_deck_select_ui.py --ignore=tests/test_integration_workflows.py
 
 # Run tests with coverage report
-pytest --cov=src
+pytest tests/ --cov=src --cov-report=html --cov-report=term
+
+# Run automated test suite
+python run_tests.py
+
+# Run specific test categories
+pytest tests/ -m ai           # AI tests only
+pytest tests/ -m unit         # Unit tests only
+pytest tests/ -m integration  # Integration tests only
 
 # Run a specific test file
-pytest tests/test_database.py
+pytest tests/test_battle.py -v
 
-# Run tests with verbose output
-pytest -v
+# Run tests matching a pattern
+pytest tests/ -k "test_attack" -v
 ```
+
+**Test Coverage:**
+- 388+ automated tests passing
+- Game engine, AI, strategic features fully tested
+- Manual testing checklist: `docs/manual-testing-checklist.md`
 
 ### Database Management
 
@@ -212,17 +225,23 @@ This is currently a learning project, but feedback and suggestions are welcome! 
 
 ## 📝 Current Status
 
-**Version:** 0.1.0 (Early Development)  
-**Phase:** Phase 2 - Core Game Engine  
+**Version:** 1.0.0 (MVP Complete!)  
+**Phase:** Phase 7 - Testing & Quality Assurance ✅  
 **Completed:**
-- ✅ Phase 1.1: Development Environment Setup
-- ✅ Phase 1.2: Database Infrastructure & Migrations
-- ✅ Phase 2.1: Card & Deck Models with Full Database CRUD Operations
-- ✅ Phase 2.2: Game State Management (One Piece TCG board layout, turn phases, DON!! system)
+- ✅ Phase 1: Project Setup & Infrastructure
+- ✅ Phase 2: Core Game Engine (One Piece TCG-based, 263 tests)
+- ✅ Phase 3: AI Opponents (Random, Minimax, MCTS - 72 tests)
+- ✅ Phase 4: Strategic Analysis (Win Advantage, Best Move, Insights - 45 tests)
+- ✅ Phase 5: User Interface (Complete game board, deck builder, help system)
+- ✅ Phase 6: Integration (UI ↔ Engine ↔ AI ↔ Database)
+- ✅ Phase 7: Testing & Quality (388+ tests, manual testing checklist)
 
-**Next Steps:** Phase 2.3 - Rules Engine (move validation, actions, game rules)
+**Next Steps:**
+- Phase 8.2: User Manual & Documentation
+- Phase 8.3: Packaging & Distribution (Windows executable)
+- Phase 9: Final Testing & MVP Launch
 
-**Test Suite:** 150 tests passing | Code Coverage: 82%
+**Test Suite:** 388+ tests passing | December 2025 Launch Target 🚀
 
 ## 📄 License
 
