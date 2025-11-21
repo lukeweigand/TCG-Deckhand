@@ -56,6 +56,13 @@ def save_deck(deck: Deck, db_path: Optional[str] = None) -> bool:
             # Delete old card associations
             cursor.execute("DELETE FROM deck_cards WHERE deck_id = ?", (deck.id,))
             
+            # Save the leader as a special entry (quantity = -1 to mark as leader)
+            if deck.leader:
+                cursor.execute("""
+                    INSERT INTO deck_cards (deck_id, card_id, quantity)
+                    VALUES (?, ?, -1)
+                """, (deck.id, deck.leader.id))
+            
             # Save card associations
             card_counts = deck.get_card_counts()
             for card in deck.cards:
@@ -110,12 +117,26 @@ def get_deck_by_id(deck_id: str, db_path: Optional[str] = None) -> Optional[Deck
                 description=row["description"] or "",
             )
             
-            # Load associated cards
+            # Load leader (stored with quantity = -1)
+            cursor.execute("""
+                SELECT c.id, c.name, c.card_type, c.cost, c.stats, c.rules_text
+                FROM deck_cards dc
+                JOIN cards c ON dc.card_id = c.id
+                WHERE dc.deck_id = ? AND dc.quantity = -1
+            """, (deck_id,))
+            
+            leader_row = cursor.fetchone()
+            if leader_row:
+                leader_card = _row_to_card(leader_row)
+                if isinstance(leader_card, Leader):
+                    deck.leader = leader_card
+            
+            # Load associated cards (quantity >= 1)
             cursor.execute("""
                 SELECT c.id, c.name, c.card_type, c.cost, c.stats, c.rules_text, dc.quantity
                 FROM deck_cards dc
                 JOIN cards c ON dc.card_id = c.id
-                WHERE dc.deck_id = ?
+                WHERE dc.deck_id = ? AND dc.quantity >= 1
                 ORDER BY c.name
             """, (deck_id,))
             
@@ -168,22 +189,19 @@ def get_deck_by_name(name: str, db_path: Optional[str] = None) -> Optional[Deck]
 
 def get_all_decks(db_path: Optional[str] = None) -> List[Deck]:
     """
-    Load all decks from the database (metadata only, without cards).
-    
-    This is useful for listing decks without the overhead of loading
-    all cards for each deck.
+    Load all decks from the database with their full card lists.
     
     Args:
         db_path: Optional custom database path
         
     Returns:
-        List of Deck instances (with empty card lists)
+        List of Deck instances (with cards loaded)
     """
     try:
         with get_connection_context(db_path) as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT id, name, description
+                SELECT id
                 FROM decks
                 ORDER BY name
             """)
@@ -191,12 +209,10 @@ def get_all_decks(db_path: Optional[str] = None) -> List[Deck]:
             rows = cursor.fetchall()
             decks = []
             for row in rows:
-                deck = Deck(
-                    id=row["id"],
-                    name=row["name"],
-                    description=row["description"] or "",
-                )
-                decks.append(deck)
+                # Load full deck with cards
+                deck = get_deck_by_id(row["id"], db_path)
+                if deck:
+                    decks.append(deck)
             
             return decks
     except Exception as e:
