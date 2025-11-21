@@ -11,3 +11,6 @@ pytest-cov>=4.1.0
 # Code quality (optional but recommended)
 black>=23.0.0
 flake8>=6.0.0
+
+# Packaging (for creating Windows executable)
+pyinstaller>=6.0.0
