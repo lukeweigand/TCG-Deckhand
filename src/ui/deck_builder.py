@@ -293,7 +293,6 @@ class DeckBuilder(tk.Frame):
             cursor='hand2',
             height=2
         ).pack(fill='x', padx=10, pady=10)
-        ).pack(fill='x', padx=10, pady=10)
     
     def load_card_pool(self):
         """Load available cards from database or create demo cards."""
@@ -442,16 +441,20 @@ class DeckBuilder(tk.Frame):
     
     def new_deck(self):
         """Create a new empty deck."""
-        deck_name = f"New Deck {len(get_all_decks()) + 1}"
-        self.current_deck = Deck(name=deck_name, description="")
-        
-        self.deck_name_entry.delete(0, tk.END)
-        self.deck_name_entry.insert(0, deck_name)
-        
-        self.deck_desc_entry.delete(0, tk.END)
-        
-        self.editor_title.config(text=f"Editing: {deck_name}")
-        self.refresh_current_deck_display()
+        try:
+            deck_name = f"New Deck {len(get_all_decks()) + 1}"
+            self.current_deck = Deck(name=deck_name, description="")
+            
+            self.deck_name_entry.delete(0, tk.END)
+            self.deck_name_entry.insert(0, deck_name)
+            
+            self.deck_desc_entry.delete(0, tk.END)
+            
+            self.editor_title.config(text=f"Editing: {deck_name}")
+            self.refresh_current_deck_display()
+            
+        except Exception as e:
+            messagebox.showerror("Error Creating Deck", f"Failed to create new deck:\n{e}")
     
     def edit_selected_deck(self):
         """Load selected deck for editing."""
@@ -512,7 +515,7 @@ class DeckBuilder(tk.Frame):
     
     def add_card_to_deck(self):
         """Add selected card from pool to current deck."""
-        if not self.current_deck:
+        if self.current_deck is None:
             messagebox.showwarning("No Deck", "Please create or select a deck first.")
             return
         
@@ -552,7 +555,7 @@ class DeckBuilder(tk.Frame):
     
     def remove_card_from_deck(self):
         """Remove selected card from current deck."""
-        if not self.current_deck:
+        if self.current_deck is None:
             return
         
         selection = self.current_deck_list.curselection()
@@ -583,9 +586,9 @@ class DeckBuilder(tk.Frame):
                     return
     
     def save_current_deck(self):
-        """Save the current deck to database."""
-        if not self.current_deck:
-            messagebox.showwarning("No Deck", "Please create a deck first.")
+        """Save the current deck to the database."""
+        if self.current_deck is None:
+            messagebox.showwarning("No Deck", "Please create or select a deck first.")
             return
         
         # Update deck name and description from entries
