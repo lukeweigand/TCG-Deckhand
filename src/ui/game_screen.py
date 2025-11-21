@@ -707,6 +707,19 @@ class GameScreen(ttk.Frame):
                     
                     ai_deck_cards.append(char)
             
+            # Create Deck objects for game initialization
+            player_deck_obj = Deck(
+                name="Player Deck",
+                leader=player_leader,
+                cards=player_deck_cards
+            )
+            
+            ai_deck_obj = Deck(
+                name="AI Deck",
+                leader=ai_leader,
+                cards=ai_deck_cards
+            )
+            
             # Create game
             config = GameConfig(
                 player1_deck=player_deck_cards,
@@ -744,8 +757,8 @@ class GameScreen(ttk.Frame):
             self.game.state = initialize_game(
                 player1_name="You",
                 player2_name=f"{self.difficulty.capitalize()} AI",
-                player1_deck=deck,
-                player2_deck=deck,
+                player1_deck=player_deck_obj,
+                player2_deck=ai_deck_obj,
                 starting_player=1
             )
             

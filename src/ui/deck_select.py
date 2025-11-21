@@ -22,6 +22,8 @@ class DeckSelect(tk.Frame):
         self.app = app
         self.selected_player_deck = None
         self.selected_ai_deck = None
+        self.player_deck_locked = False
+        self.ai_deck_locked = False
         
         # Create UI elements
         self.create_widgets()
@@ -197,14 +199,34 @@ class DeckSelect(tk.Frame):
         )
         info_label.pack(fill='x', pady=(10, 0))
         
+        # Lock in button
+        lock_btn = tk.Button(
+            panel,
+            text="🔓 Lock In Selection",
+            command=lambda: self.lock_deck_selection(is_player),
+            width=25,
+            height=1,
+            font=('Arial', 11, 'bold'),
+            bg='#2a5a2a',
+            fg='#ffffff',
+            activebackground='#3a7a3a',
+            activeforeground='#ffffff',
+            border=0,
+            cursor='hand2',
+            state='disabled'
+        )
+        lock_btn.pack(pady=(10, 0))
+        
         # Store references
         if is_player:
             self.player_listbox = listbox
             self.player_info_label = info_label
+            self.player_lock_btn = lock_btn
             listbox.bind('<<ListboxSelect>>', self.on_player_deck_select)
         else:
             self.ai_listbox = listbox
             self.ai_info_label = info_label
+            self.ai_lock_btn = lock_btn
             listbox.bind('<<ListboxSelect>>', self.on_ai_deck_select)
     
     def refresh_deck_lists(self):
@@ -245,10 +267,15 @@ class DeckSelect(tk.Frame):
     
     def on_player_deck_select(self, event):
         """Handle player deck selection."""
+        # Don't allow changes if locked
+        if self.player_deck_locked:
+            return
+            
         selection = self.player_listbox.curselection()
         if not selection or not self.decks:
             self.selected_player_deck = None
             self.player_info_label.config(text="No deck selected", fg='#a0a0a0')
+            self.player_lock_btn.config(state='disabled')
             self.update_start_button()
             return
         
@@ -267,14 +294,20 @@ class DeckSelect(tk.Frame):
         info_text = f"{status_text} | Leader: {leader_info}\n{len(self.selected_player_deck.cards)} cards"
         
         self.player_info_label.config(text=info_text, fg='#ffffff')
+        self.player_lock_btn.config(state='normal')
         self.update_start_button()
     
     def on_ai_deck_select(self, event):
         """Handle AI deck selection."""
+        # Don't allow changes if locked
+        if self.ai_deck_locked:
+            return
+            
         selection = self.ai_listbox.curselection()
         if not selection or not self.decks:
             self.selected_ai_deck = None
             self.ai_info_label.config(text="No deck selected", fg='#a0a0a0')
+            self.ai_lock_btn.config(state='disabled')
             self.update_start_button()
             return
         
@@ -293,14 +326,111 @@ class DeckSelect(tk.Frame):
         info_text = f"{status_text} | Leader: {leader_info}\n{len(self.selected_ai_deck.cards)} cards"
         
         self.ai_info_label.config(text=info_text, fg='#ffffff')
+        self.ai_lock_btn.config(state='normal')
         self.update_start_button()
     
     def update_start_button(self):
-        """Enable start button only when both decks are selected."""
-        if self.selected_player_deck and self.selected_ai_deck:
+        """Enable start button only when both decks are selected and locked."""
+        if self.player_deck_locked and self.ai_deck_locked:
             self.start_btn.config(state='normal')
         else:
             self.start_btn.config(state='disabled')
+    
+    def lock_deck_selection(self, is_player):
+        """Lock in a deck selection so it can't be changed."""
+        if is_player:
+            if not self.selected_player_deck:
+                return
+            
+            self.player_deck_locked = True
+            self.player_listbox.config(state='disabled', bg='#1a1a1a')
+            self.player_lock_btn.config(
+                text="🔒 Locked In",
+                bg='#1a4a1a',
+                state='disabled'
+            )
+            self.player_info_label.config(fg='#4caf50')
+            
+            # Add unlock button
+            if not hasattr(self, 'player_unlock_btn'):
+                self.player_unlock_btn = tk.Button(
+                    self.player_info_label.master,
+                    text="🔓 Change Selection",
+                    command=lambda: self.unlock_deck_selection(True),
+                    width=25,
+                    height=1,
+                    font=('Arial', 10),
+                    bg='#4a4a4a',
+                    fg='#ffffff',
+                    activebackground='#5a5a5a',
+                    activeforeground='#ffffff',
+                    border=0,
+                    cursor='hand2'
+                )
+                self.player_unlock_btn.pack(pady=(5, 0))
+            else:
+                self.player_unlock_btn.pack(pady=(5, 0))
+        else:
+            if not self.selected_ai_deck:
+                return
+            
+            self.ai_deck_locked = True
+            self.ai_listbox.config(state='disabled', bg='#1a1a1a')
+            self.ai_lock_btn.config(
+                text="🔒 Locked In",
+                bg='#1a4a1a',
+                state='disabled'
+            )
+            self.ai_info_label.config(fg='#4caf50')
+            
+            # Add unlock button
+            if not hasattr(self, 'ai_unlock_btn'):
+                self.ai_unlock_btn = tk.Button(
+                    self.ai_info_label.master,
+                    text="🔓 Change Selection",
+                    command=lambda: self.unlock_deck_selection(False),
+                    width=25,
+                    height=1,
+                    font=('Arial', 10),
+                    bg='#4a4a4a',
+                    fg='#ffffff',
+                    activebackground='#5a5a5a',
+                    activeforeground='#ffffff',
+                    border=0,
+                    cursor='hand2'
+                )
+                self.ai_unlock_btn.pack(pady=(5, 0))
+            else:
+                self.ai_unlock_btn.pack(pady=(5, 0))
+        
+        self.update_start_button()
+    
+    def unlock_deck_selection(self, is_player):
+        """Unlock a deck selection so it can be changed."""
+        if is_player:
+            self.player_deck_locked = False
+            self.player_listbox.config(state='normal', bg='#1e1e1e')
+            self.player_lock_btn.config(
+                text="🔓 Lock In Selection",
+                bg='#2a5a2a',
+                state='normal' if self.selected_player_deck else 'disabled'
+            )
+            self.player_info_label.config(fg='#ffffff')
+            if hasattr(self, 'player_unlock_btn'):
+                self.player_unlock_btn.pack_forget()
+        else:
+            self.ai_deck_locked = False
+            self.ai_listbox.config(state='normal', bg='#1e1e1e')
+            self.ai_lock_btn.config(
+                text="🔓 Lock In Selection",
+                bg='#2a5a2a',
+                state='normal' if self.selected_ai_deck else 'disabled'
+            )
+            self.ai_info_label.config(fg='#ffffff')
+            if hasattr(self, 'ai_unlock_btn'):
+                self.ai_unlock_btn.pack_forget()
+        
+        self.update_start_button()
     
     def start_game(self):
         """Start the game with the selected decks."""
@@ -362,9 +492,34 @@ class DeckSelect(tk.Frame):
         # Refresh deck lists
         self.refresh_deck_lists()
         
-        # Clear selections
+        # Clear selections and unlock everything
         self.selected_player_deck = None
         self.selected_ai_deck = None
+        self.player_deck_locked = False
+        self.ai_deck_locked = False
+        
+        # Reset UI states
+        self.player_listbox.config(state='normal', bg='#1e1e1e')
+        self.ai_listbox.config(state='normal', bg='#1e1e1e')
+        
         self.player_info_label.config(text="No deck selected", fg='#a0a0a0')
         self.ai_info_label.config(text="No deck selected", fg='#a0a0a0')
+        
+        self.player_lock_btn.config(
+            text="🔓 Lock In Selection",
+            bg='#2a5a2a',
+            state='disabled'
+        )
+        self.ai_lock_btn.config(
+            text="🔓 Lock In Selection",
+            bg='#2a5a2a',
+            state='disabled'
+        )
+        
+        # Hide unlock buttons if they exist
+        if hasattr(self, 'player_unlock_btn'):
+            self.player_unlock_btn.pack_forget()
+        if hasattr(self, 'ai_unlock_btn'):
+            self.ai_unlock_btn.pack_forget()
+        
         self.start_btn.config(state='disabled')
