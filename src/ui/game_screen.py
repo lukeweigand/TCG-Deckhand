@@ -189,24 +189,31 @@ class GameScreen(ttk.Frame):
         opp_center = tk.Frame(opp_zones, bg='#1e1e1e')
         opp_center.pack(side='left', fill='both', expand=True)
         
-        # Leader zone
+        # Leader zone (with rotation)
         tk.Label(opp_center, text="═ LEADER ═", font=('Arial', 9, 'bold'), fg='#888', bg='#1e1e1e').pack(pady=(1, 0))
-        self.opp_leader_zone = tk.Frame(opp_center, bg='#4a4a6a', width=120, height=78, relief='raised', bd=3)
-        self.opp_leader_zone.pack(pady=1)
-        self.opp_leader_zone.pack_propagate(False)
-        self.opp_leader_label = tk.Label(
-            self.opp_leader_zone,
+        # Container for centering
+        self.opp_leader_container = tk.Frame(opp_center, bg='#1e1e1e')
+        self.opp_leader_container.pack(pady=1)
+        
+        self.opp_leader_zone = tk.Button(
+            self.opp_leader_container,
             text="Leader\nPower: 5000",
             font=('Arial', 9, 'bold'),
-            fg='#fff',
+            fg='#ffffff',
             bg='#4a4a6a',
-            justify='center'
+            relief='raised',
+            bd=3,
+            width=15,
+            height=7,
+            wraplength=100,
+            justify='center',
+            state='disabled'
         )
-        self.opp_leader_label.pack(expand=True)
+        self.opp_leader_zone.pack()
         
         # Field (Characters)
         tk.Label(opp_center, text="═ FIELD (Characters) ═", font=('Arial', 9, 'bold'), fg='#888', bg='#1e1e1e').pack(pady=(2, 0))
-        self.opponent_field_cards = tk.Frame(opp_center, bg='#1e1e1e', height=85)
+        self.opponent_field_cards = tk.Frame(opp_center, bg='#1e1e1e', height=75)
         self.opponent_field_cards.pack(fill='x', pady=1)
         self.opponent_field_cards.pack_propagate(False)
         
@@ -310,35 +317,42 @@ class GameScreen(ttk.Frame):
         
         # Field (Characters)
         tk.Label(player_center, text="═ FIELD (Characters) ═", font=('Arial', 9, 'bold'), fg='#888', bg='#1e1e1e').pack(pady=(2, 0))
-        self.player_field_cards = tk.Frame(player_center, bg='#1e1e1e', height=85)
+        self.player_field_cards = tk.Frame(player_center, bg='#1e1e1e', height=75)
         self.player_field_cards.pack(fill='x', pady=1)
         self.player_field_cards.pack_propagate(False)
         
-        # Leader zone
+        # Leader zone (with rotation)
         tk.Label(player_center, text="═ LEADER ═", font=('Arial', 9, 'bold'), fg='#888', bg='#1e1e1e').pack(pady=(2, 0))
-        self.player_leader_zone = tk.Frame(player_center, bg='#4a4a6a', width=120, height=78, relief='raised', bd=3)
-        self.player_leader_zone.pack(pady=1)
-        self.player_leader_zone.pack_propagate(False)
-        self.player_leader_label = tk.Label(
-            self.player_leader_zone,
+        # Container for centering
+        self.player_leader_container = tk.Frame(player_center, bg='#1e1e1e')
+        self.player_leader_container.pack(pady=1)
+        
+        self.player_leader_zone = tk.Button(
+            self.player_leader_container,
             text="Leader\nPower: 5000",
             font=('Arial', 9, 'bold'),
-            fg='#fff',
+            fg='#ffffff',
             bg='#4a4a6a',
-            justify='center'
+            relief='raised',
+            bd=3,
+            width=15,
+            height=7,
+            wraplength=100,
+            justify='center',
+            state='disabled'
         )
-        self.player_leader_label.pack(expand=True)
+        self.player_leader_zone.pack()
         
         # Hand
         tk.Label(player_center, text="═ YOUR HAND ═", font=('Arial', 9, 'bold'), fg='#888', bg='#1e1e1e').pack(pady=(2, 0))
         
         # Create a frame with horizontal scrollbar for hand
-        hand_container = tk.Frame(player_center, bg='#2a2a2a', height=115)
+        hand_container = tk.Frame(player_center, bg='#2a2a2a', height=100)
         hand_container.pack(fill='x', pady=1)
         hand_container.pack_propagate(False)
         
         # Canvas for scrolling
-        self.player_hand_canvas = tk.Canvas(hand_container, bg='#2a2a2a', height=95, highlightthickness=0)
+        self.player_hand_canvas = tk.Canvas(hand_container, bg='#2a2a2a', height=80, highlightthickness=0)
         self.player_hand_scrollbar = tk.Scrollbar(hand_container, orient='horizontal', command=self.player_hand_canvas.xview)
         self.player_hand_cards = tk.Frame(self.player_hand_canvas, bg='#2a2a2a')
         
@@ -749,6 +763,12 @@ class GameScreen(ttk.Frame):
             if is_player_turn and attached_don > 0:
                 total_power += (attached_don * 1000)
             
+            # Rotate card: Portrait (15x7) when active, Landscape (20x5) when rested
+            if is_rested:
+                self.player_leader_zone.config(width=20, height=5)
+            else:
+                self.player_leader_zone.config(width=15, height=7)
+            
             # Build leader text with clear formatting
             leader_text = f"{player.leader.name[:15]}\n"  # Truncate name
             leader_text += f"⚔ PWR: {total_power}\n"
@@ -756,20 +776,20 @@ class GameScreen(ttk.Frame):
             if attached_don > 0:
                 leader_text += f"\n⚡×{attached_don} DON"
             
-            self.player_leader_label.config(text=leader_text)
+            self.player_leader_zone.config(text=leader_text)
             
             # Determine click behavior
             if self.don_attachment_mode:
                 # Yellow for DON attachment
-                self.player_leader_zone.config(bg='#5a5a2a', cursor='hand2')
-                self.player_leader_label.bind('<Button-1>', lambda e: self.execute_don_attachment("leader", is_leader=True))
+                self.player_leader_zone.config(bg='#5a5a2a', cursor='hand2', state='normal')
+                self.player_leader_zone.config(command=lambda: self.execute_don_attachment("leader", is_leader=True))
             elif self.attack_mode and self.selected_attacker is None and is_player_turn and not is_rested:
                 # Green for can attack
-                self.player_leader_zone.config(bg='#2a5a2a', cursor='hand2')
-                self.player_leader_label.bind('<Button-1>', lambda e: self.select_attacker("leader", is_leader=True))
+                self.player_leader_zone.config(bg='#2a5a2a', cursor='hand2', state='normal')
+                self.player_leader_zone.config(command=lambda: self.select_attacker("leader", is_leader=True))
             else:
-                self.player_leader_zone.config(bg='#4a4a6a', cursor='')
-                self.player_leader_label.unbind('<Button-1>')
+                self.player_leader_zone.config(bg='#4a4a6a', cursor='', state='disabled')
+                self.player_leader_zone.config(command=lambda: None)
                 
         if opponent.leader:
             # Calculate total power (base + DON bonuses only during opponent's turn)
@@ -780,6 +800,12 @@ class GameScreen(ttk.Frame):
             if is_opponent_turn and attached_don > 0:
                 total_power += (attached_don * 1000)
             
+            # Rotate card: Portrait (15x7) when active, Landscape (20x5) when rested
+            if is_opp_rested:
+                self.opp_leader_zone.config(width=20, height=5)
+            else:
+                self.opp_leader_zone.config(width=15, height=7)
+            
             # Build leader text with clear formatting
             leader_text = f"{opponent.leader.name[:15]}\n"  # Truncate name
             leader_text += f"⚔ PWR: {total_power}\n"
@@ -787,16 +813,16 @@ class GameScreen(ttk.Frame):
             if attached_don > 0:
                 leader_text += f"\n⚡×{attached_don} DON"
             
-            self.opp_leader_label.config(text=leader_text)
+            self.opp_leader_zone.config(text=leader_text)
             
             # Make opponent leader clickable as attack target
             if self.attack_mode and self.selected_attacker is not None:
                 # Red for attackable target (leader is always attackable)
-                self.opp_leader_zone.config(bg='#5a2a2a', cursor='crosshair')
-                self.opp_leader_label.bind('<Button-1>', lambda e: self.execute_attack("leader"))
+                self.opp_leader_zone.config(bg='#5a2a2a', cursor='crosshair', state='normal')
+                self.opp_leader_zone.config(command=lambda: self.execute_attack("leader"))
             else:
-                self.opp_leader_zone.config(bg='#4a4a6a', cursor='')
-                self.opp_leader_label.unbind('<Button-1>')
+                self.opp_leader_zone.config(bg='#4a4a6a', cursor='', state='disabled')
+                self.opp_leader_zone.config(command=lambda: None)
         
         # Update field cards
         self.update_field_display()
@@ -842,6 +868,12 @@ class GameScreen(ttk.Frame):
             is_rested = char_state.value == 'rested'
             state_icon = '💤' if is_rested else '⚡'
             
+            # Card rotation: Portrait when active, Landscape when rested
+            if is_rested:
+                card_width, card_height = 13, 3  # Landscape (wider, shorter)
+            else:
+                card_width, card_height = 9, 5  # Portrait (narrower, taller)
+            
             # Build card text with clear formatting
             card_text = f"{char.name[:12]}\n"  # Truncate long names
             card_text += f"PWR: {total_power} {state_icon}"
@@ -874,8 +906,8 @@ class GameScreen(ttk.Frame):
                     activebackground='#6a6a3a',
                     relief='raised',
                     bd=2,
-                    width=12,
-                    height=4,
+                    width=card_width,
+                    height=card_height,
                     cursor='hand2',
                     wraplength=80,
                     justify='center',
@@ -893,8 +925,8 @@ class GameScreen(ttk.Frame):
                     activebackground='#3a6a3a',
                     relief='raised',
                     bd=2,
-                    width=12,
-                    height=4,
+                    width=card_width,
+                    height=card_height,
                     cursor='hand2',
                     wraplength=80,
                     justify='center',
@@ -911,8 +943,8 @@ class GameScreen(ttk.Frame):
                     bg='#4a4a4a',
                     relief='raised',
                     bd=2,
-                    width=12,
-                    height=4,
+                    width=card_width,
+                    height=card_height,
                     wraplength=80,
                     justify='center'
                 )
@@ -927,8 +959,8 @@ class GameScreen(ttk.Frame):
                     bg='#4a4a4a',
                     relief='raised',
                     bd=2,
-                    width=12,
-                    height=4,
+                    width=card_width,
+                    height=card_height,
                     wraplength=80,
                     justify='center'
                 )
@@ -951,6 +983,12 @@ class GameScreen(ttk.Frame):
             char_state = opponent.character_states.get(char.id, CardState.ACTIVE)
             is_rested = char_state.value == 'rested'
             state_icon = '💤' if is_rested else '⚡'
+            
+            # Card rotation: Portrait when active, Landscape when rested
+            if is_rested:
+                card_width, card_height = 13, 3  # Landscape (wider, shorter)
+            else:
+                card_width, card_height = 9, 5  # Portrait (narrower, taller)
             
             # Build card text with clear formatting
             card_text = f"{char.name[:12]}\n"  # Truncate long names
@@ -982,8 +1020,8 @@ class GameScreen(ttk.Frame):
                     activebackground='#6a3a3a',
                     relief='raised',
                     bd=2,
-                    width=12,
-                    height=4,
+                    width=card_width,
+                    height=card_height,
                     cursor='crosshair',
                     wraplength=80,
                     justify='center',
@@ -999,8 +1037,8 @@ class GameScreen(ttk.Frame):
                     bg='#4a4a4a',
                     relief='raised',
                     bd=2,
-                    width=12,
-                    height=4,
+                    width=card_width,
+                    height=card_height,
                     wraplength=80,
                     justify='center'
                 )
