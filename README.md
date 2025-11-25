@@ -50,14 +50,25 @@ TCG Deckhand provides a secure, offline environment for refining decks and pract
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### Option 1: Windows Executable (Easiest)
+
+**Download the standalone executable (no Python required):**
+
+1. Go to [Releases](https://github.com/lukeweigand/TCG-Deckhand/releases/tag/v1.0.0)
+2. Download `TCGDeckhand-v1.0.0-Windows.zip`
+3. Extract the ZIP file
+4. Double-click `TCGDeckhand.exe` to launch
+
+### Option 2: Run from Source (For Developers)
+
+**Prerequisites:**
 
 - **Python 3.10 or higher** ([Download here](https://www.python.org/downloads/))
 - **Git** (for cloning the repository)
 
 > **Note:** This project uses Python 3.10.6. On Windows, Python is accessed via the `py` launcher.
 
-### Installation
+**Installation:**
 
 1. **Clone the repository**
    ```powershell
@@ -234,7 +245,7 @@ This is currently a learning project, but feedback and suggestions are welcome! 
 ## 📝 Current Status
 
 **Version:** 1.0.0 (MVP Complete!)  
-**Phase:** Phase 8.2 - Documentation ✅  
+**Phase:** Phase 9.2 - Launch Preparation 🚀  
 **Completed:**
 - ✅ Phase 1: Project Setup & Infrastructure
 - ✅ Phase 2: Core Game Engine (One Piece TCG-based, 263 tests)
@@ -242,13 +253,14 @@ This is currently a learning project, but feedback and suggestions are welcome! 
 - ✅ Phase 4: Strategic Analysis (Win Advantage, Best Move, Insights - 45 tests)
 - ✅ Phase 5: User Interface (Complete game board, deck builder, help system)
 - ✅ Phase 6: Integration (UI ↔ Engine ↔ AI ↔ Database)
-- ✅ Phase 7: Testing & Quality (388+ tests, manual testing checklist)
+- ✅ Phase 7: Testing & Quality (388+ tests, manual testing complete)
 - ✅ Phase 8.1: User Experience (Help system, error messages, UX polish)
 - ✅ Phase 8.2: Documentation (User manual, deck format spec, developer guide)
+- ✅ Phase 8.3: Packaging & Distribution (Windows executable built and tested)
+- ✅ Phase 9.1: Final Testing (Bugs fixed, performance validated, security confirmed)
 
-**Next Steps:**
-- Phase 8.3: Packaging & Distribution (Windows executable, installer)
-- Phase 9: Final Testing & MVP Launch (December 2025 🚀)
+**Current:**
+- 🚀 Phase 9.2: Launch Preparation (Finalize docs, create ZIP, publish release)
 
 **Test Suite:** 388+ tests passing | December 2025 Launch Target 🚀
 
